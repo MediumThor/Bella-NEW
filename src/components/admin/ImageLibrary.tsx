@@ -556,20 +556,6 @@ const ImageLibrary = () => {
     }
   };
 
-  const handleDeleteSlide = async (id: string) => {
-    if (!window.confirm('Are you sure you want to remove this image from the slideshow?')) {
-      return;
-    }
-
-    try {
-      await deleteDoc(doc(db, 'slideshowImages', id));
-      setSlideshowImages(slideshowImages.filter(img => img.id !== id));
-    } catch (error) {
-      console.error('Error deleting slideshow image:', error);
-      alert('Failed to delete slideshow image');
-    }
-  };
-
   const handleDeleteHomeSlide = async (id: string) => {
     if (!window.confirm('Are you sure you want to remove this image from the home page slideshow?')) {
       return;
@@ -581,39 +567,6 @@ const ImageLibrary = () => {
     } catch (error) {
       console.error('Error deleting home slideshow image:', error);
       alert('Failed to delete home slideshow image');
-    }
-  };
-
-  const handleSaveHeadshot = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!headshotUrl.trim()) {
-      alert('Please provide a headshot image URL');
-      return;
-    }
-
-    setSavingHeadshot(true);
-    try {
-      // For simplicity, always use a single document 'main'
-      const headshotDocRef = doc(db, 'headshots', 'main');
-      await setDoc(headshotDocRef, {
-        url: headshotUrl.trim(),
-        name: headshotName.trim() || 'Headshot',
-        updatedAt: serverTimestamp()
-      });
-
-      setHeadshot({
-        url: headshotUrl.trim(),
-        name: headshotName.trim() || 'Headshot',
-        updatedAt: new Date()
-      });
-
-      alert('Headshot updated successfully!');
-    } catch (error) {
-      console.error('Error saving headshot:', error);
-      alert('Failed to save headshot');
-    } finally {
-      setSavingHeadshot(false);
     }
   };
 
@@ -768,22 +721,6 @@ const ImageLibrary = () => {
     } catch (error) {
       console.error('Error removing inventory image:', error);
       alert('Failed to remove inventory image');
-    }
-  };
-
-  const handleClearHeadshot = async () => {
-    if (!window.confirm('Remove the current headshot? This will fall back to the default image.')) {
-      return;
-    }
-
-    try {
-      await deleteDoc(doc(db, 'headshots', 'main'));
-      setHeadshot(null);
-      setHeadshotUrl('');
-      setHeadshotName('');
-    } catch (error) {
-      console.error('Error clearing headshot:', error);
-      alert('Failed to clear headshot');
     }
   };
 
