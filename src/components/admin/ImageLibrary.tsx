@@ -88,7 +88,7 @@ const ImageLibrary = () => {
   const [savingHomepageImage, setSavingHomepageImage] = useState(false);
 
   // Dropdown state for section navigation
-  const [selectedSection, setSelectedSection] = useState<string>('homepage-slideshow');
+  const [selectedSection] = useState<string>('homepage-slideshow');
 
   // Image cropper state
   const [cropperFile, setCropperFile] = useState<File | null>(null);
@@ -501,43 +501,6 @@ const ImageLibrary = () => {
     } catch (error) {
       console.error('Error deleting process image:', error);
       alert('Failed to delete process image');
-    }
-  };
-
-  const handleSlideUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!newSlideUrl.trim() || !newSlideName.trim()) {
-      alert('Please provide both slideshow image URL and name');
-      return;
-    }
-
-    setUploadingSlide(true);
-    try {
-      const docRef = await addDoc(collection(db, 'slideshowImages'), {
-        url: newSlideUrl.trim(),
-        name: newSlideName.trim(),
-        createdAt: serverTimestamp()
-      });
-
-      setSlideshowImages([
-        {
-          id: docRef.id,
-          url: newSlideUrl.trim(),
-          name: newSlideName.trim(),
-          createdAt: new Date()
-        },
-        ...slideshowImages
-      ]);
-
-      setNewSlideUrl('');
-      setNewSlideName('');
-      alert('Slideshow image added successfully!');
-    } catch (error) {
-      console.error('Error uploading slideshow image:', error);
-      alert('Failed to upload slideshow image');
-    } finally {
-      setUploadingSlide(false);
     }
   };
 
