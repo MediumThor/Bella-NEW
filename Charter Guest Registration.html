@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Charter Guest Registration Form</title>
+  <style>
+    :root{
+      --max: 980px;
+      --radius: 12px;
+      --gap: 14px;
+      --gap-lg: 22px;
+      --shadow: 0 6px 28px rgba(0,0,0,.08);
+      --border: 1px solid #e5e7eb;
+      --accent: #0d6efd;
+    }
+    body{ font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; margin:0; background:#f8fafc; color:#0f172a; }
+    .wrapper{ max-width:var(--max); margin:24px auto 120px; padding:0 16px; }
+    header{ background:#fff; border-radius:var(--radius); padding:24px; box-shadow:var(--shadow); margin-bottom:var(--gap-lg); border:var(--border); }
+    header h1{ margin:0 0 4px 0; font-size:1.75rem; }
+    header p{ margin:6px 0 0 0; color:#475569; }
+    form{ background:#fff; border-radius:var(--radius); box-shadow:var(--shadow); border:var(--border); padding:20px; }
+    fieldset{ border:var(--border); border-radius:10px; padding:16px; margin-bottom:var(--gap-lg); }
+    legend{ padding:0 8px; font-weight:700; }
+    .grid{ display:grid; grid-template-columns:repeat(12,1fr); gap:var(--gap); margin-top:var(--gap); }
+    .col-12{ grid-column:span 12; } .col-8{ grid-column:span 8; } .col-6{ grid-column:span 6; } .col-4{ grid-column:span 4; } .col-3{ grid-column:span 3; }
+    @media (max-width:800px){ .col-8,.col-6,.col-4,.col-3{ grid-column:span 12; } }
+    label{ display:block; font-weight:600; margin-bottom:6px; }
+    .req::after{ content:" *"; color:#ef4444; }
+    input[type="text"],input[type="email"],input[type="tel"],input[type="date"],input[type="time"],input[type="number"],select,textarea{
+      width:100%; padding:12px; border-radius:10px; border:var(--border); background:#fff; box-sizing:border-box; font-size:1rem;
+    }
+    textarea{ min-height:100px; resize:vertical; }
+    .help{ color:#64748b; font-size:.9rem; margin:4px 0 0 0; }
+    .checkline{ display:flex; align-items:flex-start; gap:10px; }
+    .pill{ display:inline-block; padding:2px 10px; border-radius:20px; background:#eef2ff; color:#3730a3; font-weight:600; font-size:.85rem; border:1px solid #c7d2fe; }
+    .actions{ display:flex; flex-wrap:wrap; gap:10px; }
+    button{ cursor:pointer; border-radius:10px; border:1px solid #cbd5e1; background:#f1f5f9; padding:10px 14px; font-weight:700; }
+    button.primary{ background:var(--accent); color:#fff; border-color:var(--accent); }
+    button.warn{ background:#fee2e2; border-color:#fecaca; color:#991b1b; }
+    canvas{ width:100%; height:160px; border:1px dashed #94a3b8; border-radius:8px; background:#f8fafc; }
+    .disclaimer{ background:#fff7ed; border:1px solid #fed7aa; padding:12px; border-radius:10px; color:#7c2d12; }
+    @media print{ header,#prefillLock,.actions,.no-print{ display:none !important; } body{ background:#fff; } form{ box-shadow:none; border:none; padding:0; } }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <header role="banner">
+      <h1>Charter Guest Registration Form</h1>
+      <p>Please complete one form per booking party. Items marked with <span aria-hidden="true" style="color:#ef4444">*</span> are required.</p>
+    </header>
+
+    <form id="charterForm" novalidate>
+
+      <!-- Captain Prefill & Lock -->
+      <fieldset id="prefillLock" class="no-print">
+        <legend>Captain Prefill &amp; Lock</legend>
+        <p class="help">Use this to pre-fill your parts, then lock them before sending to the client. (This block won’t appear in printed PDFs.)</p>
+        <div class="actions">
+          <button type="button" onclick="lockCaptainFields()">Lock Captain Fields</button>
+          <button type="button" onclick="unlockCaptainFields()">Unlock Captain Fields</button>
+          <button type="button" onclick="downloadClientCopy()" class="primary">Download Client Copy</button>
+        </div>
+        <p class="help">Tip: Fill out agreement &amp; fees first. Then click <strong>Lock Captain Fields</strong> and <strong>Download Client Copy</strong>.</p>
+      </fieldset>
+
+      <!-- Charter Details -->
+      <fieldset>
+        <legend>Charter Details</legend>
+        <div class="grid">
+          <div class="col-6">
+            <label class="req" for="charterDate">Charter date</label>
+            <input id="charterDate" name="charterDate" type="date" required />
+          </div>
+          <div class="col-3">
+            <label class="req" for="startTime">Start time</label>
+            <input id="startTime" name="startTime" type="time" required />
+          </div>
+          <div class="col-3">
+            <label for="duration">Duration (days)</label>
+            <input id="duration" name="duration" type="text" placeholder="e.g., 1 day, 2.5 days, weekend trip" />
+          </div>
+          <div class="col-12">
+            <label class="req" for="charterType">Charter type</label>
+            <select id="charterType" name="charterType" required>
+              <option value="" selected disabled>Select...</option>
+              <option>Sunset Sail</option>
+              <option>Half-Day</option>
+              <option>Full-Day</option>
+              <option>Private Lesson / Coaching</option>
+              <option>Special Event</option>
+              <option>Custom</option>
+            </select>
+          </div>
+          <div class="col-4">
+            <label class="req" for="partySize">Number of guests</label>
+            <input id="partySize" name="partySize" type="number" min="1" max="12" required />
+          </div>
+          <div class="col-12">
+            <label for="pickupLocation">Pickup / meeting location</label>
+            <input id="pickupLocation" name="pickupLocation" type="text" maxlength="60" size="30" placeholder="Marina name, dock number, etc." />
+            <p class="help">Max 60 characters.</p>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Lead Guest -->
+      <fieldset>
+        <legend>Lead Guest (Primary Contact)</legend>
+        <div class="grid">
+          <div class="col-6">
+            <label class="req" for="fullName">Full name</label>
+            <input id="fullName" name="fullName" type="text" autocomplete="name" required />
+          </div>
+          <div class="col-6">
+            <label for="preferredName">Preferred name</label>
+            <input id="preferredName" name="preferredName" type="text" />
+          </div>
+          <div class="col-6">
+            <label class="req" for="email">Email</label>
+            <input id="email" name="email" type="email" inputmode="email" autocomplete="email" required />
+          </div>
+          <div class="col-6">
+            <label class="req" for="phone">Mobile phone</label>
+            <input id="phone" name="phone" type="tel" inputmode="tel" placeholder="+1 555 555 5555" required />
+          </div>
+          <div class="col-12">
+            <label for="address">Mailing address</label>
+            <input id="address" name="address" type="text" autocomplete="street-address" />
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Guest Roster -->
+      <fieldset>
+        <legend>Guest Roster</legend>
+        <p class="help">List additional guests (names only). Add age if any guest is a minor.</p>
+        <div class="grid" id="guestList">
+          <div class="col-6"><input type="text" name="guest_1" placeholder="Guest 1 — Full name (Age)" /></div>
+          <div class="col-6"><input type="text" name="guest_2" placeholder="Guest 2 — Full name (Age)" /></div>
+          <div class="col-6"><input type="text" name="guest_3" placeholder="Guest 3 — Full name (Age)" /></div>
+          <div class="col-6"><input type="text" name="guest_4" placeholder="Guest 4 — Full name (Age)" /></div>
+        </div>
+        <div><button type="button" onclick="addGuest()">+ Add another guest</button></div>
+      </fieldset>
+
+      <!-- Safety & Health -->
+      <fieldset>
+        <legend>Safety & Health</legend>
+        <div class="grid">
+          <div class="col-12">
+            <label for="allergies">Dietary restrictions / allergies</label>
+            <textarea id="allergies" name="allergies" placeholder="E.g., shellfish allergy, vegetarian"></textarea>
+          </div>
+          <div class="col-12">
+            <label for="medical">Relevant medical notes</label>
+            <textarea id="medical" name="medical" placeholder="Seasickness history, mobility considerations, medications schedule, etc."></textarea>
+          </div>
+          <div class="col-6">
+            <label class="req" for="experience">Sailing experience</label>
+            <select id="experience" name="experience" required>
+              <option value="" disabled selected>Select...</option>
+              <option>First time</option>
+              <option>Some experience</option>
+              <option>Experienced sailor</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="req" for="lifejackets">Life jacket sizes needed</label>
+            <input id="lifejackets" name="lifejackets" type="text" placeholder="e.g., 2x Adult, 1x Youth (50–90 lb), 1x Child (30–50 lb)" required />
+          </div>
+          <div class="col-12">
+            <div class="checkline">
+              <input id="nonSlip" name="nonSlip" type="checkbox" />
+              <label for="nonSlip">We understand non-slip, closed-toe shoes are recommended.</label>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Emergency Contact -->
+      <fieldset>
+        <legend>Emergency Contact</legend>
+        <div class="grid">
+          <div class="col-6">
+            <label class="req" for="emgName">Name</label>
+            <input id="emgName" name="emgName" type="text" required />
+          </div>
+          <div class="col-6">
+            <label class="req" for="emgPhone">Phone</label>
+            <input id="emgPhone" name="emgPhone" type="tel" inputmode="tel" required />
+          </div>
+          <div class="col-12">
+            <label for="emgRelation">Relationship</label>
+            <input id="emgRelation" name="emgRelation" type="text" />
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Charter Agreement -->
+      <fieldset>
+        <legend>Charter Agreement</legend>
+        <div class="grid">
+          <div class="col-12">
+            <p class="help"><strong>AGREEMENT</strong> made this day by and between <strong>Your Business Name</strong> (hereinafter referred to as the Company) and the Charterer for the charter of the yacht named below (the "Yacht"). Yacht name may change.</p>
+          </div>
+
+          <div class="col-6">
+            <label class="req" for="agreementDateText">Agreement date</label>
+            <input id="agreementDateText" name="agreementDateText" type="text" placeholder="e.g., 1st May 2025" required />
+          </div>
+          <div class="col-6">
+            <label class="req" for="chartererName">Charterer (full name)</label>
+            <input id="chartererName" name="chartererName" type="text" placeholder="e.g., John Doe" required />
+          </div>
+
+          <div class="col-6">
+            <label class="req" for="companyName">Company</label>
+            <input id="companyName" name="companyName" type="text" value="Your Business Name" required />
+          </div>
+          <div class="col-3">
+            <label class="req" for="yachtModel">Yacht model/type</label>
+            <input id="yachtModel" name="yachtModel" type="text" placeholder="e.g., Isla 40" required />
+          </div>
+          <div class="col-3">
+            <label class="req" for="yachtName">Yacht name</label>
+            <input id="yachtName" name="yachtName" type="text" placeholder="e.g., Paire De Jaques" required />
+          </div>
+
+          <div class="col-12">
+            <div class="checkline">
+              <input id="sleepAboard" name="sleepAboard" type="checkbox" />
+              <label for="sleepAboard">SLEEP-ABOARD (night before embarkation)</label>
+            </div>
+          </div>
+          <div class="col-3">
+            <label for="sleepFromTime">Sleep-aboard from (time)</label>
+            <input id="sleepFromTime" name="sleepFromTime" type="time" />
+          </div>
+          <div class="col-3">
+            <label for="sleepFromDate">Sleep-aboard on (date)</label>
+            <input id="sleepFromDate" name="sleepFromDate" type="date" />
+          </div>
+
+          <div class="col-12"><hr/></div>
+
+          <div class="col-12"><label>CHARTER DATES</label></div>
+          <div class="col-3">
+            <label class="req" for="charterFromTime">From (time)</label>
+            <input id="charterFromTime" name="charterFromTime" type="time" value="12:00" required />
+          </div>
+          <div class="col-3">
+            <label class="req" for="charterFromDate">From (date)</label>
+            <input id="charterFromDate" name="charterFromDate" type="date" required />
+          </div>
+          <div class="col-3">
+            <label class="req" for="charterToTime">To (time)</label>
+            <input id="charterToTime" name="charterToTime" type="time" value="12:00" required />
+          </div>
+          <div class="col-3">
+            <label class="req" for="charterToDate">To (date)</label>
+            <input id="charterToDate" name="charterToDate" type="date" required />
+          </div>
+          <div class="col-4">
+            <label for="totalNights">Total nights (auto)</label>
+            <input id="totalNights" name="totalNights" type="number" inputmode="numeric" readonly placeholder="—" />
+          </div>
+          <div class="col-4">
+            <label for="numInParty">Number in party (# pax)</label>
+            <input id="numInParty" name="numInParty" type="number" min="1" inputmode="numeric" placeholder="e.g., 5" />
+          </div>
+          <div class="col-4">
+            <label for="paxNotes">PAX notes (optional)</label>
+            <input id="paxNotes" name="paxNotes" type="text" placeholder="e.g., day-by-day pax counts" />
+          </div>
+
+          <div class="col-12"><hr/></div>
+
+          <div class="col-12"><label>FEES &amp; AMOUNTS (USD)</label></div>
+          <div class="col-12"><strong>Required Fees</strong></div>
+
+          <div class="col-6">
+            <label for="charterFee">Charter Fee</label>
+            <input id="charterFee" name="charterFee" type="number" step="0.01" placeholder="e.g., 5760" inputmode="decimal" />
+          </div>
+
+          <div class="col-6">
+            <label for="provisioning">Provisioning</label>
+            <input id="provisioning" name="provisioning" type="number" step="0.01" placeholder="e.g., 0" inputmode="decimal" />
+          </div>
+
+          <div class="col-6">
+            <label for="nationalParksFee">National Parks Fee</label>
+            <input id="nationalParksFee" name="nationalParksFee" type="number" step="0.01" placeholder="e.g., 35" inputmode="decimal" />
+          </div>
+          <div class="col-6">
+            <label for="cruisingPermit">BVI Cruising Permit</label>
+            <input id="cruisingPermit" name="cruisingPermit" type="number" step="0.01" placeholder="e.g., 120" inputmode="decimal" />
+          </div>
+
+          <div class="col-6">
+            <label for="fuelSurcharge">Fuel Surcharge</label>
+            <input id="fuelSurcharge" name="fuelSurcharge" type="number" step="0.01" placeholder="e.g., 0" inputmode="decimal" />
+          </div>
+
+          <div class="col-12"><strong>Optional Add-ons</strong></div>
+          <div class="col-6">
+            <label for="visarDonation">Starlink High-Speed Internet Access (day/week) — Optional</label>
+            <input id="visarDonation" name="visarDonation" type="number" step="0.01" placeholder="e.g., 50 or 200" inputmode="decimal" />
+          </div>
+          <div class="col-6">
+            <label for="hotel">Stand Up Paddle Boards (weekly) — Optional</label>
+            <input id="hotel" name="hotel" type="number" step="0.01" placeholder="e.g., 150" inputmode="decimal" />
+          </div>
+          <div class="col-6">
+            <label for="instructorFee">ASA Certification Classes (per student) — Optional</label>
+            <input id="instructorFee" name="instructorFee" type="number" step="0.01" placeholder="e.g., 300" inputmode="decimal" />
+          </div>
+
+          <div class="col-12"><hr/></div>
+
+          <div class="col-4">
+            <label for="totalAmount">Total Charter and Extras (auto)</label>
+            <input id="totalAmount" name="totalAmount" type="number" step="0.01" readonly placeholder="—" />
+          </div>
+          <div class="col-4">
+            <label for="depositDue">Deposit Due</label>
+            <input id="depositDue" name="depositDue" type="number" step="0.01" placeholder="e.g., 2000" inputmode="decimal" />
+            <p class="help">MC/Visa accepted</p>
+          </div>
+          <div class="col-4">
+            <label for="balanceDue">Balance Due (auto)</label>
+            <input id="balanceDue" name="balanceDue" type="number" step="0.01" readonly placeholder="—" />
+          </div>
+
+          <div class="col-6">
+            <label for="refundableDamageDeposit">Refundable Damage Deposit</label>
+            <input id="refundableDamageDeposit" name="refundableDamageDeposit" type="number" step="0.01" placeholder="e.g., 3500" inputmode="decimal" />
+            <p class="help">*May be waived with instructor on board (see terms).</p>
+          </div>
+          <div class="col-6">
+            <label for="paymentNotes">Payment notes</label>
+            <input id="paymentNotes" name="paymentNotes" type="text" placeholder="e.g., see para. 1; pg. 2" />
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Policies & Waiver -->
+      <fieldset>
+        <legend>Policies &amp; Liability Waiver</legend>
+        <details>
+          <summary><span class="pill">Read</span> Charter policies (cancellation, weather, lateness)</summary>
+          <div class="grid col-12">
+            <p><strong>Weather:</strong> The captain may cancel or reschedule for unsafe conditions (e.g., high winds, lightning, mechanical issues). If the captain cancels, guests may reschedule or receive a full refund of any deposit.</p>
+            <p><strong>Refund policy:</strong> Trip insurance is strongly advised. If forgoing the purchase of trip insurance, no portion of the charter fee paid herein is refundable unless the Charterer provides the Company at least sixty (60) days’ written notice prior to the start date of the charter of their intention to cancel. At sixty (60) days out, there will be the option of a refund of the deposit less a $500.00 cancellation fee and any credit card fees charged to the Company. Within the sixty (60) days period prior to the charter start, should the Company be able to rebook the Yacht for the same charter dates under such terms and conditions at least as favorable to the Company as those set forth herein, there will be a $500.00 cancellation fee withheld. If payments were made by PayPal, there will be a 3% credit card processing fee withheld from the decided refund.</p>
+            <p><strong>Lateness:</strong> Trips depart on time. Late arrivals may reduce time on the water. No refunds for lost time due to late arrival.</p>
+            <p><strong>Alcohol:</strong> Moderate consumption permitted at captain’s discretion. Excessive intoxication as determined by the Captain is grounds for trip termination without refund.</p>
+            <p><strong>Children:</strong> Minors must be accompanied by a parent or guardian. Coast Guard–approved PFDs required for children as per local law.</p>
+          </div>
+        </details>
+        <details class="row">
+          <summary><span class="pill">Read</span> Liability waiver</summary>
+          <div class="row">
+            <p class="disclaimer">
+              I, the undersigned, understand that boating involves inherent risks including but not limited to slips, falls, motion-related injuries, changing weather and sea conditions, and equipment malfunction. I agree to follow all safety instructions from the captain and crew. I voluntarily assume all risks and release the vessel, captain, and crew from liability for injury, loss, or damage, except in cases of gross negligence or willful misconduct. I confirm that I am physically able to participate in the activity described.
+            </p>
+          </div>
+        </details>
+        <div class="grid">
+          <div class="col-12">
+            <div class="checkline">
+              <input id="agreePolicies" name="agreePolicies" type="checkbox" required />
+              <label class="req" for="agreePolicies">I have read and agree to the charter policies.</label>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="checkline">
+              <input id="agreeWaiver" name="agreeWaiver" type="checkbox" required />
+              <label class="req" for="agreeWaiver">I have read and agree to the liability waiver.</label>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="checkline">
+              <input id="photoConsent" name="photoConsent" type="checkbox" />
+              <label for="photoConsent">I consent to reasonable use of photos/videos taken during the charter for promotional purposes.</label>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- E-Signature -->
+      <fieldset>
+        <legend>E-Signature</legend>
+        <p class="help">Use your mouse or finger to sign below.</p>
+        <canvas id="sig" aria-label="Signature pad"></canvas>
+        <div><button type="button" onclick="clearSig()">Clear signature</button></div>
+      </fieldset>
+
+      <!-- Notes -->
+      <fieldset>
+        <legend>Notes / Special Requests</legend>
+        <textarea id="notes" name="notes" placeholder="Birthday, proposal, ashes scattering details, music preferences, surprises, etc."></textarea>
+      </fieldset>
+
+      <!-- Actions -->
+      <div class="actions">
+        <button type="submit" class="primary">Submit / Save</button>
+        <button type="button" onclick="print()">Print / Save as PDF</button>
+        <button type="button" onclick="downloadJSON()">Download as JSON</button>
+        <button type="button" onclick="saveDraft()">Save Draft (device)</button>
+        <button type="button" onclick="loadDraft()">Load Draft</button>
+        <button type="reset" class="warn">Reset Form</button>
+      </div>
+      <p class="help">Questions? Contact the captain at <a href="mailto:captain@example.com">captain@example.com</a> or +1 (555) 555-5555. Replace with your actual contact details.</p>
+    </form>
+  </div>
+
+<script>
+  // Signature Pad
+  const canvas = document.getElementById('sig');
+  const ctx = canvas.getContext('2d');
+  function resizeCanvas(){
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    canvas.width = canvas.offsetWidth * ratio;
+    canvas.height = canvas.offsetHeight * ratio;
+    ctx.scale(ratio, ratio);
+    ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#0f172a';
+  }
+  let drawing = false, last = null;
+  function pos(evt){
+    const rect = canvas.getBoundingClientRect();
+    const x = (evt.touches ? evt.touches[0].clientX : evt.clientX) - rect.left;
+    const y = (evt.touches ? evt.touches[0].clientY : evt.clientY) - rect.top;
+    return {x, y};
+  }
+  function start(e){ drawing = true; last = pos(e); e.preventDefault(); }
+  function move(e){
+    if(!drawing) return; const p = pos(e);
+    ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+    last = p; e.preventDefault();
+  }
+  function end(){ drawing = false; }
+  function clearSig(){ ctx.clearRect(0,0,canvas.width,canvas.height); }
+  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('load', () => { resizeCanvas(); document.getElementById('charterForm').addEventListener('submit', onSubmit); });
+  canvas.addEventListener('mousedown', start);
+  canvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, {passive:false});
+  canvas.addEventListener('touchmove', move, {passive:false});
+  canvas.addEventListener('touchend', end);
+
+  // Utilities
+  function formToJSON(){
+    const form = document.getElementById('charterForm');
+    const data = new FormData(form);
+    const obj = {};
+    for (const [k,v] of data.entries()){
+      if (obj[k]){ if (Array.isArray(obj[k])) obj[k].push(v); else obj[k] = [obj[k], v]; }
+      else { obj[k] = v; }
+    }
+    ['nonSlip','agreePolicies','agreeWaiver','photoConsent','sleepAboard'].forEach(id => {
+      const el = document.getElementById(id); if(el) obj[id] = el.checked;
+    });
+    obj.signaturePNG = canvas.toDataURL('image/png');
+    return obj;
+  }
+  function downloadJSON(){
+    const blob = new Blob([JSON.stringify(formToJSON(), null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob); const a = document.createElement('a');
+    a.href = url; a.download = 'charter-registration.json'; a.click(); URL.revokeObjectURL(url);
+  }
+  function saveDraft(){ localStorage.setItem('charterDraft', JSON.stringify(formToJSON())); alert('Draft saved on this device.'); }
+  function loadDraft(){
+    const raw = localStorage.getItem('charterDraft'); if(!raw){ alert('No draft found.'); return; }
+    const data = JSON.parse(raw); const form = document.getElementById('charterForm');
+    for (const [k,v] of Object.entries(data)){
+      const el = form.elements[k]; if(!el) continue;
+      if (el.type === 'checkbox') el.checked = !!v;
+      else if (el.tagName === 'SELECT' || el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') el.value = v;
+    }
+    alert('Draft loaded.');
+  }
+  function onSubmit(e){
+    e.preventDefault();
+    const form = e.target;
+    if (!form.checkValidity()){ form.reportValidity(); return; }
+    const submissions = JSON.parse(localStorage.getItem('charterSubmissions') || '[]');
+    submissions.push({submittedAt: new Date().toISOString(), data: formToJSON()});
+    localStorage.setItem('charterSubmissions', JSON.stringify(submissions));
+    alert('Saved! You can now Print to PDF or Download as JSON to send/share.');
+  }
+
+  // Agreement helpers
+  function calcNights(){
+    const from = document.getElementById('charterFromDate').value;
+    const to = document.getElementById('charterToDate').value;
+    if (!from || !to) return;
+    try{
+      const d1 = new Date(from); const d2 = new Date(to);
+      const diff = Math.round((d2 - d1) / (1000*60*60*24));
+      if (!isNaN(diff)) document.getElementById('totalNights').value = diff;
+    }catch(e){}
+  }
+  ['charterFromDate','charterToDate'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.addEventListener('change', calcNights);
+  });
+
+  function num(id){ const v = parseFloat(document.getElementById(id)?.value || '0'); return isNaN(v) ? 0 : v; }
+  function calcTotals(){
+    const total = [
+      'charterFee','provisioning','nationalParksFee','cruisingPermit','fuelSurcharge',
+      'visarDonation','hotel','instructorFee','otherFees'
+    ].reduce((s,id)=> s + num(id), 0);
+    const deposit = num('depositDue');
+    const balance = Math.max(total - deposit, 0);
+    const totalEl = document.getElementById('totalAmount');
+    const balEl = document.getElementById('balanceDue');
+    if (totalEl) totalEl.value = total.toFixed(2);
+    if (balEl) balEl.value = balance.toFixed(2);
+  }
+  ['charterFee','provisioning','nationalParksFee','cruisingPermit','fuelSurcharge','visarDonation','hotel','instructorFee','otherFees','depositDue']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener('input', calcTotals); });
+
+  // Captain Prefill & Lock Mode
+  const CAPTAIN_FIELD_IDS = [
+    'agreementDateText','companyName','yachtModel','yachtName','sleepAboard','sleepFromTime','sleepFromDate',
+    'charterFromTime','charterFromDate','charterToTime','charterToDate','totalNights','numInParty','paxNotes',
+    'charterFee','provisioning','nationalParksFee','cruisingPermit','fuelSurcharge',
+    'visarDonation','hotel','instructorFee','otherFees','depositDue','totalAmount','balanceDue',
+    'refundableDamageDeposit','paymentNotes'
+  ];
+  function setDisabled(ids, disabled){
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.disabled = !!disabled;
+      if (disabled) el.setAttribute('data-locked','captain');
+      else el.removeAttribute('data-locked');
+    });
+  }
+  function lockCaptainFields(){
+    setDisabled(CAPTAIN_FIELD_IDS, true);
+    localStorage.setItem('captainFieldsLocked','1');
+    alert('Captain fields are now locked. Use "Download Client Copy" to generate a client-ready file.');
+  }
+  function unlockCaptainFields(){
+    setDisabled(CAPTAIN_FIELD_IDS, false);
+    localStorage.removeItem('captainFieldsLocked');
+    alert('Captain fields are now unlocked.');
+  }
+  window.addEventListener('load', () => {
+    if (localStorage.getItem('captainFieldsLocked') === '1'){ setDisabled(CAPTAIN_FIELD_IDS, true); }
+  });
+
+  // FIXED: Download Client Copy (Print-to-PDF method)
+  function downloadClientCopy(){
+    const form = document.getElementById('charterForm');
+
+    // Remove old note if one exists
+    const existing = document.getElementById('clientCopyNote');
+    if (existing) existing.remove();
+
+    // Add client note at top of form
+    const note = document.createElement('div');
+    note.id = 'clientCopyNote';
+    note.className = 'disclaimer';
+    note.textContent = 'Some items have been pre-filled and locked by the Captain. Please complete the remaining fields and sign.';
+    form.insertBefore(note, form.firstElementChild);
+
+    // Open built-in Print → Save as PDF
+    window.print();
+
+    // Clean up after dialog opens
+    setTimeout(() => {
+      const noteEl = document.getElementById('clientCopyNote');
+      if (noteEl) noteEl.remove();
+    }, 500);
+  }
+
+  // Add Guest
+  function addGuest(){
+    const wrap = document.getElementById('guestList');
+    const count = wrap.querySelectorAll('input').length + 1;
+    const div = document.createElement('div'); div.className = 'col-6';
+    const input = document.createElement('input'); input.type = 'text';
+    input.name = 'guest_' + count; input.placeholder = 'Guest ' + count + ' — Full name (Age)';
+    div.appendChild(input); wrap.appendChild(div);
+  }
+</script>
+</body>
+</html>
