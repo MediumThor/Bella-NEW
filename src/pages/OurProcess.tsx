@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import './OurProcess.css';
 
