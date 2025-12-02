@@ -23,8 +23,8 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 1.25rem 2rem;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   position: relative;
   width: 100%;
@@ -81,76 +81,17 @@
   transform: rotate(-45deg) translate(7px, -7px);
 }
 
-.nav-menu-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.menu-button {
-  background: none;
-  border: none;
-  color: #fff;
-  font-weight: 500;
-  font-size: 15px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  padding: 0.5rem 1rem;
-  transition: color 0.2s ease;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.menu-button:hover {
-  color: #EADAB6;
-}
-
 .nav-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
   display: flex;
   list-style: none;
   margin: 0;
-  padding: 1rem 2rem;
+  padding: 0;
   gap: 2.5rem;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  background-color: rgba(0, 0, 0, 0.95);
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  opacity: 0;
-  visibility: hidden;
-  transform: scale(0.8);
-  transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
-  pointer-events: none;
-  margin-top: 0.5rem;
-  z-index: 1002;
+  position: static;
 }
-
-.nav-menu-wrapper:hover .nav-menu {
-  opacity: 1;
-  visibility: visible;
-  transform: scale(1);
-  pointer-events: all;
-}
-
-.nav-menu li {
-  opacity: 0;
-  transform: translateY(-10px);
-  transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
-}
-
-.nav-menu-wrapper:hover .nav-menu li {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.nav-menu li:nth-child(1) { transition-delay: 0.05s; }
-.nav-menu li:nth-child(2) { transition-delay: 0.1s; }
-.nav-menu li:nth-child(3) { transition-delay: 0.15s; }
-.nav-menu li:nth-child(4) { transition-delay: 0.2s; }
-.nav-menu li:nth-child(5) { transition-delay: 0.25s; }
 
 .nav-menu li a {
   text-decoration: none;
@@ -190,30 +131,22 @@
 }
 
 .nav-sign-in {
-  color: #fff !important;
-  padding: 0.5rem 0 !important;
-  font-weight: 500;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
-  transition: color 0.2s ease;
+  background-color: #EADAB6;
+  color: #000 !important;
+  padding: 0.5rem 1.5rem !important;
+  border-radius: 6px;
+  font-weight: 600;
+  text-shadow: none !important;
+  transition: background-color 0.3s ease;
 }
 
 .nav-sign-in:hover {
-  color: #EADAB6 !important;
+  background-color: #FFBFA9;
+  color: #000 !important;
 }
 
 .nav-sign-in::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background-color: #EADAB6;
-  transition: width 0.3s ease;
-}
-
-.nav-sign-in:hover::after {
-  width: 100%;
+  display: none;
 }
 
 /* Dropdown Menu */
@@ -321,12 +254,9 @@
 
 /* Mobile Styles */
 @media (max-width: 968px) {
-  .nav-menu-wrapper {
-    display: none;
-  }
-
   .hamburger {
     display: flex;
+    justify-self: end;
     margin-left: auto;
   }
 
@@ -337,6 +267,7 @@
 
   .nav-container {
     padding: 1rem 1.5rem;
+    grid-template-columns: auto 1fr;
     position: relative;
     overflow: visible !important;
   }
@@ -345,12 +276,12 @@
     height: 60px;
   }
 
-  .nav-menu-mobile {
+  .nav-menu {
     position: absolute !important;
     top: 100% !important;
     left: 0 !important;
     width: 100vw !important;
-    background-color: #000000 !important;
+    background-color: #ffffff !important;
     flex-direction: column !important;
     align-items: flex-start !important;
     padding: 1rem 1.5rem !important;
@@ -360,10 +291,10 @@
     margin: 0 !important;
     list-style: none !important;
     display: none !important;
-    border-top: 1px solid #333 !important;
+    border-top: 1px solid #e8e8e8 !important;
   }
 
-  .nav-menu-mobile.open {
+  .nav-menu.open {
     display: flex !important;
   }
 
@@ -371,29 +302,29 @@
     display: none !important;
   }
 
-  .nav-menu-mobile li {
+  .nav-menu li {
     width: 100% !important;
-    border-bottom: 1px solid #333 !important;
+    border-bottom: 1px solid #e8e8e8 !important;
     display: block !important;
   }
 
-  .nav-menu-mobile li a {
+  .nav-menu li a {
     display: block !important;
     padding: 1rem 0 !important;
     font-size: 16px !important;
     width: 100% !important;
-    color: #fff !important;
+    color: #1a1a1a !important;
     text-decoration: none !important;
     visibility: visible !important;
     opacity: 1 !important;
   }
 
-  .nav-menu-mobile li a::after {
+  .nav-menu li a::after {
     display: none;
   }
 
-  .nav-menu-mobile li a.active {
-    color: #EADAB6;
+  .nav-menu li a.active {
+    color: #1a73e8;
     font-weight: 600;
   }
 

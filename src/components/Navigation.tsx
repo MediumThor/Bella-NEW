@@ -39,36 +39,6 @@ const Navigation = () => {
           <Link to="/" className="logo" onClick={closeMenu}>
             <img src="/Logo.png" alt="Bella Stone Logo" className="logo-img" />
           </Link>
-          <div className="nav-menu-wrapper">
-            <button 
-              className="menu-button"
-              aria-label="Menu"
-            >
-              Menu
-            </button>
-            <ul className="nav-menu">
-              {navItems.map((item) => (
-                <li key={item.path}>
-                  <Link
-                    to={item.path}
-                    className={location.pathname === item.path ? 'active' : ''}
-                    onClick={closeMenu}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-              <li>
-                <Link
-                  to="/admin/login"
-                  className="nav-sign-in"
-                  onClick={closeMenu}
-                >
-                  Sign In
-                </Link>
-              </li>
-            </ul>
-          </div>
           <button 
             className={`hamburger ${isMenuOpen ? 'active' : ''}`}
             onClick={toggleMenu}
@@ -78,7 +48,7 @@ const Navigation = () => {
             <span></span>
             <span></span>
           </button>
-          <ul className={`nav-menu-mobile ${isMenuOpen ? 'open' : ''}`}>
+          <ul className={`nav-menu ${isMenuOpen ? 'open' : ''}`}>
             {navItems.map((item) => (
               <li key={item.path}>
                 <Link
@@ -91,13 +61,13 @@ const Navigation = () => {
               </li>
             ))}
             <li>
-              <Link
+                    <Link
                 to="/admin/login"
                 className="nav-sign-in"
-                onClick={closeMenu}
-              >
+                      onClick={closeMenu}
+                    >
                 Sign In
-              </Link>
+                    </Link>
             </li>
           </ul>
         </div>
