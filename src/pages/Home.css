@@ -58,11 +58,12 @@
 .home-page .parallax-hero-title {
   color: #fff;
   font-size: 5rem;
-  font-weight: 700;
-  font-family: 'Playfair Display', serif;
+  font-weight: 400;
+  font-family: 'Bebas Neue', sans-serif;
   text-align: center;
   text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   font-style: normal;
 }
 
