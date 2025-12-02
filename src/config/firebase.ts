@@ -15,6 +15,19 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
+// Debug: Check if environment variables are loaded (remove in production)
+if (import.meta.env.DEV) {
+  console.log('Firebase Config:', {
+    apiKey: firebaseConfig.apiKey ? `${firebaseConfig.apiKey.substring(0, 10)}...` : 'MISSING',
+    authDomain: firebaseConfig.authDomain || 'MISSING',
+    projectId: firebaseConfig.projectId || 'MISSING',
+  });
+  
+  if (!firebaseConfig.apiKey) {
+    console.error('❌ VITE_FIREBASE_API_KEY is missing! Make sure .env file exists and dev server was restarted.');
+  }
+}
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 

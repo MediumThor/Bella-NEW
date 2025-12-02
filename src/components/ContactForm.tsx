@@ -94,16 +94,22 @@ const ContactForm = () => {
         }
       }
 
-      await addDoc(collection(db, 'contactMessages'), {
+      const messageData: any = {
         name: formData.name.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim(),
         subject: formData.subject,
         message: formData.message.trim(),
         status: 'new',
-        imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
         createdAt: serverTimestamp(),
-      });
+      };
+
+      // Only include imageUrls if there are images (Firestore doesn't allow undefined)
+      if (imageUrls.length > 0) {
+        messageData.imageUrls = imageUrls;
+      }
+
+      await addDoc(collection(db, 'contactMessages'), messageData);
 
       setSubmitStatus('success');
       setFormData({ name: '', email: '', phone: '', subject: 'General Question', message: '' });
