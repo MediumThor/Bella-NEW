@@ -148,6 +148,7 @@ const Home = () => {
           >
           <div className="parallax-hero-overlay">
             <h1 className="parallax-hero-title">Bella Stone</h1>
+            <p className="parallax-hero-slogan">Where Elegance Meets Excellence</p>
           </div>
                 </div>
       </section>
