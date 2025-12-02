@@ -78,6 +78,28 @@ const Navigation = () => {
             <span></span>
             <span></span>
           </button>
+          <ul className={`nav-menu-mobile ${isMenuOpen ? 'open' : ''}`}>
+            {navItems.map((item) => (
+              <li key={item.path}>
+                <Link
+                  to={item.path}
+                  className={location.pathname === item.path ? 'active' : ''}
+                  onClick={closeMenu}
+                >
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <Link
+                to="/admin/login"
+                className="nav-sign-in"
+                onClick={closeMenu}
+              >
+                Sign In
+              </Link>
+            </li>
+          </ul>
         </div>
       </nav>
     </>
