@@ -9,6 +9,25 @@ interface ImageSlideshowProps {
 const ImageSlideshow = ({ images, title }: ImageSlideshowProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
+
+  // Preload current, next, and previous images
+  useEffect(() => {
+    const imagesToLoad = new Set<number>();
+    imagesToLoad.add(currentIndex);
+    imagesToLoad.add((currentIndex + 1) % images.length);
+    imagesToLoad.add((currentIndex - 1 + images.length) % images.length);
+
+    imagesToLoad.forEach((index) => {
+      if (!loadedImages.has(index)) {
+        const img = new Image();
+        img.src = images[index];
+        img.onload = () => {
+          setLoadedImages((prev) => new Set(prev).add(index));
+        };
+      }
+    });
+  }, [currentIndex, images, loadedImages]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -35,6 +54,15 @@ const ImageSlideshow = ({ images, title }: ImageSlideshowProps) => {
     setIsPlaying(false);
   };
 
+  // Only render current slide and preload adjacent ones
+  const getVisibleSlides = () => {
+    const visible = new Set<number>();
+    visible.add(currentIndex);
+    visible.add((currentIndex + 1) % images.length);
+    visible.add((currentIndex - 1 + images.length) % images.length);
+    return Array.from(visible);
+  };
+
   return (
     <div className="slideshow-container">
       {title && <h3 className="slideshow-title">{title}</h3>}
@@ -43,11 +71,14 @@ const ImageSlideshow = ({ images, title }: ImageSlideshowProps) => {
           ‹
         </button>
         <div className="slideshow">
-          {images.map((image, index) => (
+          {getVisibleSlides().map((index) => (
             <div
               key={index}
               className={`slide ${index === currentIndex ? 'active' : ''}`}
-              style={{ backgroundImage: `url(${image})` }}
+              style={{ 
+                backgroundImage: loadedImages.has(index) ? `url(${images[index]})` : 'none',
+                display: index === currentIndex ? 'block' : 'none'
+              }}
             />
           ))}
         </div>
