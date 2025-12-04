@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import Navigation from './components/Navigation';
 import Footer from './components/Footer';
@@ -7,18 +7,32 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import OurProcess from './pages/OurProcess';
 import Inventory from './pages/Inventory';
-import Sailing from './pages/Sailing';
-import Leadership from './pages/Leadership';
-import Connect from './pages/Connect';
-import Blog from './pages/Blog';
-import Resources from './pages/Resources';
-import AdminLogin from './pages/AdminLogin';
-import AdminDashboard from './pages/AdminDashboard';
-import BlogPostEditor from './pages/BlogPostEditor';
-import CharterFormEditor from './pages/CharterFormEditor';
-import CharterGuestForm from './pages/CharterGuestForm';
-import JobChecklist from './pages/JobChecklist';
 import './App.css';
+
+// Lazy load less frequently used pages
+const Sailing = lazy(() => import('./pages/Sailing'));
+const Leadership = lazy(() => import('./pages/Leadership'));
+const Connect = lazy(() => import('./pages/Connect'));
+const Blog = lazy(() => import('./pages/Blog'));
+const Resources = lazy(() => import('./pages/Resources'));
+const AdminLogin = lazy(() => import('./pages/AdminLogin'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const BlogPostEditor = lazy(() => import('./pages/BlogPostEditor'));
+const CharterFormEditor = lazy(() => import('./pages/CharterFormEditor'));
+const CharterGuestForm = lazy(() => import('./pages/CharterGuestForm'));
+const JobChecklist = lazy(() => import('./pages/JobChecklist'));
+
+const LoadingFallback = () => (
+  <div style={{ 
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    minHeight: '50vh',
+    color: '#EADAB6'
+  }}>
+    Loading...
+  </div>
+);
 
 const ScrollToTop = () => {
   const location = useLocation();
@@ -53,19 +67,72 @@ function App() {
           <Navigation />
             <Routes>
               <Route path="/" element={<Home />} />
-            <Route path="/our-process" element={<main className="main-content"><OurProcess /></main>} />
-            <Route path="/inventory" element={<main className="main-content"><Inventory /></main>} />
-            <Route path="/sailing" element={<><main className="main-content"><Sailing /></main><Footer /></>} />
-            <Route path="/leadership" element={<><Navigation /><main className="main-content"><Leadership /></main><Footer /></>} />
-            <Route path="/connect" element={<><Navigation /><main className="main-content"><Connect /></main><Footer /></>} />
-            <Route path="/blog" element={<><Navigation /><main className="main-content"><Blog /></main><Footer /></>} />
-            <Route path="/resources" element={<><Navigation /><main className="main-content"><Resources /></main><Footer /></>} />
-              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/our-process" element={<main className="main-content"><OurProcess /></main>} />
+              <Route path="/inventory" element={<main className="main-content"><Inventory /></main>} />
+              <Route 
+                path="/sailing" 
+                element={
+                  <Suspense fallback={<LoadingFallback />}>
+                    <main className="main-content"><Sailing /></main>
+                    <Footer />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/leadership" 
+                element={
+                  <Suspense fallback={<LoadingFallback />}>
+                    <Navigation />
+                    <main className="main-content"><Leadership /></main>
+                    <Footer />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/connect" 
+                element={
+                  <Suspense fallback={<LoadingFallback />}>
+                    <Navigation />
+                    <main className="main-content"><Connect /></main>
+                    <Footer />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/blog" 
+                element={
+                  <Suspense fallback={<LoadingFallback />}>
+                    <Navigation />
+                    <main className="main-content"><Blog /></main>
+                    <Footer />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/resources" 
+                element={
+                  <Suspense fallback={<LoadingFallback />}>
+                    <Navigation />
+                    <main className="main-content"><Resources /></main>
+                    <Footer />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/admin/login" 
+                element={
+                  <Suspense fallback={<LoadingFallback />}>
+                    <AdminLogin />
+                  </Suspense>
+                } 
+              />
               <Route
                 path="/admin/dashboard"
                 element={
                   <ProtectedRoute>
-                    <AdminDashboard />
+                    <Suspense fallback={<LoadingFallback />}>
+                      <AdminDashboard />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -73,7 +140,9 @@ function App() {
                 path="/admin/new-post"
                 element={
                   <ProtectedRoute>
-                    <BlogPostEditor />
+                    <Suspense fallback={<LoadingFallback />}>
+                      <BlogPostEditor />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -81,7 +150,9 @@ function App() {
                 path="/admin/edit-post/:id"
                 element={
                   <ProtectedRoute>
-                    <BlogPostEditor />
+                    <Suspense fallback={<LoadingFallback />}>
+                      <BlogPostEditor />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -89,7 +160,9 @@ function App() {
                 path="/admin/charter-form/:id"
                 element={
                   <ProtectedRoute>
-                    <CharterFormEditor />
+                    <Suspense fallback={<LoadingFallback />}>
+                      <CharterFormEditor />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -97,12 +170,28 @@ function App() {
                 path="/admin/charter-form/new"
                 element={
                   <ProtectedRoute>
-                    <CharterFormEditor />
+                    <Suspense fallback={<LoadingFallback />}>
+                      <CharterFormEditor />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
-              <Route path="/charter-form/:id" element={<CharterGuestForm />} />
-              <Route path="/job-checklist" element={<main className="main-content"><JobChecklist /></main>} />
+              <Route 
+                path="/charter-form/:id" 
+                element={
+                  <Suspense fallback={<LoadingFallback />}>
+                    <CharterGuestForm />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/job-checklist" 
+                element={
+                  <Suspense fallback={<LoadingFallback />}>
+                    <main className="main-content"><JobChecklist /></main>
+                  </Suspense>
+                } 
+              />
             </Routes>
         </div>
       </Router>
