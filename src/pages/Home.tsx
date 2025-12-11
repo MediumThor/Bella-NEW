@@ -6,6 +6,9 @@ import { db } from '../config/firebase';
 import { FaFacebook, FaInstagram, FaPhone, FaEnvelope } from 'react-icons/fa';
 import './Home.css';
 
+// Local homepage hero image
+const HOMEPAGE_HERO_IMAGE = '/homepage.jpeg';
+
 interface HomeSlide {
   id: string;
   url: string;
@@ -16,7 +19,6 @@ interface HomeSlide {
 const Home = () => {
   const [homeSlides, setHomeSlides] = useState<string[]>([]);
   const [loadingHomeSlides, setLoadingHomeSlides] = useState(true);
-  const [homepageImage, setHomepageImage] = useState<string | null>(null);
   const sectionsRef = useRef<(HTMLElement | null)[]>([]);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -69,6 +71,23 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
+    // Set fallback images immediately for fast initial load
+    const fallbackImages = [
+      '/2.webp',
+      '/3.webp',
+      '/6.webp',
+      '/7.webp',
+      '/8.webp',
+      '/9.webp',
+      '/10.webp',
+      '/11.webp',
+      '/12.webp',
+      '/13.webp',
+    ];
+    setHomeSlides(fallbackImages);
+    setLoadingHomeSlides(false);
+
+    // Fetch Firebase images in the background after page load
     const fetchHomeSlides = async () => {
       try {
         const slidesRef = collection(db, 'homeSlideshowImages');
@@ -78,57 +97,19 @@ const Home = () => {
 
         if (fetched.length > 0) {
           setHomeSlides(fetched);
-        } else {
-          // Fallback default images for home slideshow
-          setHomeSlides([
-            '/2.webp',
-            '/3.webp',
-            '/6.webp',
-            '/7.webp',
-            '/8.webp',
-            '/9.webp',
-            '/10.webp',
-            '/11.webp',
-            '/12.webp',
-            '/13.webp',
-          ]);
         }
       } catch (error) {
         console.error('Error fetching home slideshow images:', error);
-        setHomeSlides([
-          '/2.webp',
-          '/3.webp',
-          '/6.webp',
-          '/7.webp',
-          '/8.webp',
-          '/9.webp',
-          '/10.webp',
-          '/11.webp',
-          '/12.webp',
-          '/13.webp',
-        ]);
-      } finally {
-        setLoadingHomeSlides(false);
+        // Keep fallback images on error
       }
     };
 
-    const fetchHomepageImage = async () => {
-      try {
-        const homepageRef = collection(db, 'homepageImage');
-        const snapshot = await getDocs(homepageRef);
-        if (!snapshot.empty) {
-          const data = snapshot.docs[0].data();
-          if (data.url) {
-            setHomepageImage(data.url);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching homepage image:', error);
-      }
-    };
+    // Delay Firebase fetch to allow page to render first
+    const timeoutId = setTimeout(() => {
+      fetchHomeSlides();
+    }, 100);
 
-    fetchHomeSlides();
-    fetchHomepageImage();
+    return () => clearTimeout(timeoutId);
   }, []);
 
   return (
@@ -139,11 +120,7 @@ const Home = () => {
           className="parallax-hero-image parallax"
             data-speed="0.2"
             style={{
-            backgroundImage: homepageImage 
-              ? `url(${homepageImage})` 
-              : homeSlides.length > 0 
-                ? `url(${homeSlides[0]})` 
-                : 'url(/9.webp)'
+            backgroundImage: `url(${HOMEPAGE_HERO_IMAGE})`
             }}
           >
           <div className="parallax-hero-overlay">
@@ -172,20 +149,6 @@ const Home = () => {
                   >
               Contact Us
                   </button>
-          </div>
-          
-          <div className="company-logos">
-            <p style={{ width: '100%', textAlign: 'center', color: '#888', fontSize: '0.9rem', marginBottom: '1rem' }}>
-              Trusted by leading organizations
-            </p>
-            {/* Note: Add company logos here when available */}
-            {/* Example placeholders - replace with actual logo images */}
-            <div className="company-logo-placeholder" style={{ color: '#EADAB6', fontSize: '1.2rem', fontWeight: '600' }}>
-              Milwaukee Brewers
-              </div>
-            <div className="company-logo-placeholder" style={{ color: '#EADAB6', fontSize: '1.2rem', fontWeight: '600' }}>
-              Sendik's
-            </div>
           </div>
         </div>
       </section>

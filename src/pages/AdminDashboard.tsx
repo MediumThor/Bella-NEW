@@ -8,9 +8,10 @@ import ImageLibrary from '../components/admin/ImageLibrary';
 import ContactInquiries from '../components/admin/ContactInquiries';
 import ProcessGallery from '../components/admin/ProcessGallery';
 import JobRequests from '../components/admin/JobRequests';
+import MeasurementRequests from '../components/admin/MeasurementRequests';
 import './AdminDashboard.css';
 
-type TabType = 'blogs' | 'images' | 'content' | 'inquiries' | 'process-gallery' | 'job-requests';
+type TabType = 'blogs' | 'images' | 'content' | 'inquiries' | 'process-gallery' | 'job-requests' | 'measurement-requests';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<TabType>('inquiries');
@@ -18,6 +19,7 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [newInquiryCounts, setNewInquiryCounts] = useState({
     contacts: 0,
+    measurements: 0,
   });
   const [attnInquiryCounts, setAttnInquiryCounts] = useState({
     contacts: 0,
@@ -57,10 +59,28 @@ const AdminDashboard = () => {
       }
     );
 
+    // Real-time listener for new measurement requests
+    const measurementsRef = collection(db, 'measurementRequests');
+    const measurementsNewQuery = query(measurementsRef, where('status', '==', 'new'));
+    
+    const unsubscribeMeasurementsNew = onSnapshot(
+      measurementsNewQuery,
+      (snapshot) => {
+        setNewInquiryCounts(prev => ({
+          ...prev,
+          measurements: snapshot.size,
+        }));
+      },
+      (error) => {
+        console.error('Error listening to measurement requests:', error);
+      }
+    );
+
     // Cleanup: unsubscribe from all listeners when component unmounts
     return () => {
       unsubscribeContactsNew();
       unsubscribeContactsAttn();
+      unsubscribeMeasurementsNew();
     };
   }, []);
 
@@ -123,6 +143,15 @@ const AdminDashboard = () => {
           Job Requests
         </button>
         <button
+          className={`tab-button ${activeTab === 'measurement-requests' ? 'active' : ''}`}
+          onClick={() => setActiveTab('measurement-requests')}
+        >
+          Measurement Requests
+          {newInquiryCounts.measurements > 0 && (
+            <span className="notification-badge">{newInquiryCounts.measurements}</span>
+          )}
+        </button>
+        <button
           className={`tab-button tab-button-disabled`}
           disabled
           title="Page Content editor is temporarily disabled"
@@ -138,6 +167,7 @@ const AdminDashboard = () => {
         {/* PageContentEditor kept for future use but not currently active */}
         {activeTab === 'inquiries' && <ContactInquiries />}
         {activeTab === 'job-requests' && <JobRequests />}
+        {activeTab === 'measurement-requests' && <MeasurementRequests />}
       </div>
     </div>
   );
