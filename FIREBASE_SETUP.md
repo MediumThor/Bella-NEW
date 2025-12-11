@@ -321,7 +321,10 @@ npm install
 - `homepageImage` - Single hero image for the homepage
 - `horusImage` - Image for Horus Slab Scanner equipment
 - `sassoImage` - Image for Sasso K-600 Miter Saw equipment
+<<<<<<< HEAD
 - `measurementRequests` - Measurement checklist form submissions from cabinet makers/GCs
+=======
+>>>>>>> 9b03ed7a672bc58a6fb7416c543dab9d50559e35
 
 ## Access Admin Panel
 

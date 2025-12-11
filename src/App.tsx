@@ -192,7 +192,7 @@ function App() {
                     <main className="main-content"><JobChecklist /></main>
                   </Suspense>
                 } 
-              />
+              /> 
               <Route 
                 path="/measurement" 
                 element={
