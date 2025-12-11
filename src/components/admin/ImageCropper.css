@@ -1,0 +1,121 @@
+.image-cropper-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.image-cropper-modal {
+  background-color: #1a1a1a;
+  border-radius: 12px;
+  border: 1px solid #333;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.image-cropper-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #333;
+}
+
+.image-cropper-header h3 {
+  color: #EADAB6;
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.image-cropper-close {
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.image-cropper-close:hover {
+  background-color: #333;
+  color: #fff;
+}
+
+.image-cropper-content {
+  padding: 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: auto;
+  max-height: calc(90vh - 150px);
+}
+
+.image-cropper-react-crop {
+  max-width: 100%;
+}
+
+.image-cropper-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid #333;
+}
+
+.image-cropper-btn-cancel,
+.image-cropper-btn-apply {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.image-cropper-btn-cancel {
+  background-color: #333;
+  color: #fff;
+}
+
+.image-cropper-btn-cancel:hover {
+  background-color: #444;
+}
+
+.image-cropper-btn-apply {
+  background-color: #EADAB6;
+  color: #000;
+}
+
+.image-cropper-btn-apply:hover {
+  background-color: #FFBFA9;
+}
+
+@media (max-width: 768px) {
+  .image-cropper-modal {
+    max-width: 95vw;
+    max-height: 95vh;
+  }
+  
+  .image-cropper-content {
+    padding: 1rem;
+  }
+}
+
