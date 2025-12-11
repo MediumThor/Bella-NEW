@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './ImageSlideshow.css';
 
 interface ImageSlideshowProps {
@@ -10,24 +10,56 @@ const ImageSlideshow = ({ images, title }: ImageSlideshowProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
+  const [isVisible, setIsVisible] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Preload current, next, and previous images
+  // Intersection Observer to only load images when slideshow is visible
   useEffect(() => {
+    if (!containerRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(containerRef.current);
+
+    return () => {
+      if (containerRef.current) {
+        observer.unobserve(containerRef.current);
+      }
+    };
+  }, []);
+
+  // Preload current, next, and previous images only when visible
+  useEffect(() => {
+    if (!isVisible || images.length === 0) return;
+
     const imagesToLoad = new Set<number>();
     imagesToLoad.add(currentIndex);
     imagesToLoad.add((currentIndex + 1) % images.length);
     imagesToLoad.add((currentIndex - 1 + images.length) % images.length);
 
     imagesToLoad.forEach((index) => {
-      if (!loadedImages.has(index)) {
+      if (!loadedImages.has(index) && images[index]) {
         const img = new Image();
+        img.loading = 'lazy';
         img.src = images[index];
         img.onload = () => {
           setLoadedImages((prev) => new Set(prev).add(index));
         };
+        img.onerror = () => {
+          console.error(`Failed to load image at index ${index}`);
+        };
       }
     });
-  }, [currentIndex, images, loadedImages]);
+  }, [currentIndex, images, loadedImages, isVisible]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -64,7 +96,7 @@ const ImageSlideshow = ({ images, title }: ImageSlideshowProps) => {
   };
 
   return (
-    <div className="slideshow-container">
+    <div className="slideshow-container" ref={containerRef}>
       {title && <h3 className="slideshow-title">{title}</h3>}
       <div className="slideshow-wrapper">
         <button className="slideshow-button prev" onClick={goToPrevious} aria-label="Previous image">
@@ -74,13 +106,18 @@ const ImageSlideshow = ({ images, title }: ImageSlideshowProps) => {
           {getVisibleSlides().map((index) => (
             <div
               key={index}
-              className={`slide ${index === currentIndex ? 'active' : ''}`}
+              className={`slide ${index === currentIndex ? 'active' : ''} ${loadedImages.has(index) ? 'loaded' : 'loading'}`}
               style={{ 
                 backgroundImage: loadedImages.has(index) ? `url(${images[index]})` : 'none',
                 display: index === currentIndex ? 'block' : 'none'
               }}
             />
           ))}
+          {!loadedImages.has(currentIndex) && (
+            <div className="slide-loading-placeholder">
+              <div className="loading-spinner"></div>
+            </div>
+          )}
         </div>
         <button className="slideshow-button next" onClick={goToNext} aria-label="Next image">
           ›

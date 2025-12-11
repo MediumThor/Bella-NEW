@@ -297,33 +297,92 @@ const MeasurementRequests = () => {
                 {selectedRequest.appliances && (
                   <div className="detail-section">
                     <h4>Appliance Specs & Cutouts</h4>
-                    {Object.entries(selectedRequest.appliances).map(([key, appliance]: [string, any]) => {
-                      if (key === 'applianceClearancesNotes' || !appliance || typeof appliance !== 'object') return null;
-                      if (appliance.specOption === 'None' || appliance.specOption === 'Per Drawing Spec') {
-                        return (
-                          <div key={key} className="appliance-item">
-                            <strong>{key.replace(/([A-Z])/g, ' $1').trim()}:</strong> {appliance.specOption || 'N/A'}
+                    {selectedRequest.appliances.items && selectedRequest.appliances.items.length > 0 ? (
+                      <>
+                        {selectedRequest.appliances.items.map((appliance: any, index: number) => (
+                          <div key={index} className="nested-item">
+                            <h5>Appliance {index + 1}</h5>
+                            <div className="detail-grid">
+                              <div><strong>Type:</strong> {appliance.type || 'N/A'}</div>
+                              <div><strong>Model:</strong> {appliance.model || 'N/A'}</div>
+                              <div><strong>Spec Option:</strong> {appliance.specOption || 'N/A'}</div>
+                            </div>
+                            {appliance.specLink && (
+                              <p style={{ marginTop: '0.5rem' }}>
+                                <strong>Spec Link:</strong>{' '}
+                                <a href={appliance.specLink} target="_blank" rel="noopener noreferrer" style={{ color: '#4a9eff' }}>
+                                  {appliance.specLink}
+                                </a>
+                              </p>
+                            )}
+                            {appliance.specDocumentUrl && (
+                              <p style={{ marginTop: '0.5rem' }}>
+                                <strong>Spec Document:</strong>{' '}
+                                <a href={appliance.specDocumentUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#4a9eff' }}>
+                                  View Document
+                                </a>
+                              </p>
+                            )}
+                            {appliance.notes && (
+                              <p style={{ marginTop: '0.5rem', whiteSpace: 'pre-wrap' }}><strong>Notes:</strong> {appliance.notes}</p>
+                            )}
                           </div>
-                        );
-                      }
-                      return (
-                        <div key={key} className="appliance-item">
-                          <h5>{key.replace(/([A-Z])/g, ' $1').trim()}</h5>
-                          <div className="detail-grid">
-                            <div><strong>Model:</strong> {appliance.model || 'N/A'}</div>
-                            <div><strong>Spec Option:</strong> {appliance.specOption || 'N/A'}</div>
+                        ))}
+                        {selectedRequest.appliances.applianceClearancesNotes && (
+                          <div style={{ marginTop: '1rem' }}>
+                            <strong>Clearances Notes:</strong>
+                            <p style={{ whiteSpace: 'pre-wrap', marginTop: '0.5rem' }}>{selectedRequest.appliances.applianceClearancesNotes}</p>
                           </div>
-                          {appliance.notes && (
-                            <p style={{ marginTop: '0.5rem' }}><strong>Notes:</strong> {appliance.notes}</p>
-                          )}
-                        </div>
-                      );
-                    })}
-                    {selectedRequest.appliances.applianceClearancesNotes && (
-                      <div style={{ marginTop: '1rem' }}>
-                        <strong>Clearances Notes:</strong>
-                        <p style={{ whiteSpace: 'pre-wrap', marginTop: '0.5rem' }}>{selectedRequest.appliances.applianceClearancesNotes}</p>
-                      </div>
+                        )}
+                      </>
+                    ) : (
+                      // Fallback for old format (backward compatibility)
+                      <>
+                        {Object.entries(selectedRequest.appliances).map(([key, appliance]: [string, any]) => {
+                          if (key === 'applianceClearancesNotes' || key === 'items' || !appliance || typeof appliance !== 'object') return null;
+                          if (appliance.specOption === 'None' || appliance.specOption === 'Per Drawing Spec') {
+                            return (
+                              <div key={key} className="appliance-item">
+                                <strong>{key.replace(/([A-Z])/g, ' $1').trim()}:</strong> {appliance.specOption || 'N/A'}
+                              </div>
+                            );
+                          }
+                          return (
+                            <div key={key} className="appliance-item">
+                              <h5>{key.replace(/([A-Z])/g, ' $1').trim()}</h5>
+                              <div className="detail-grid">
+                                <div><strong>Model:</strong> {appliance.model || 'N/A'}</div>
+                                <div><strong>Spec Option:</strong> {appliance.specOption || 'N/A'}</div>
+                              </div>
+                              {appliance.specLink && (
+                                <p style={{ marginTop: '0.5rem' }}>
+                                  <strong>Spec Link:</strong>{' '}
+                                  <a href={appliance.specLink} target="_blank" rel="noopener noreferrer" style={{ color: '#4a9eff' }}>
+                                    {appliance.specLink}
+                                  </a>
+                                </p>
+                              )}
+                              {appliance.specDocumentUrl && (
+                                <p style={{ marginTop: '0.5rem' }}>
+                                  <strong>Spec Document:</strong>{' '}
+                                  <a href={appliance.specDocumentUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#4a9eff' }}>
+                                    View Document
+                                  </a>
+                                </p>
+                              )}
+                              {appliance.notes && (
+                                <p style={{ marginTop: '0.5rem' }}><strong>Notes:</strong> {appliance.notes}</p>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {selectedRequest.appliances.applianceClearancesNotes && (
+                          <div style={{ marginTop: '1rem' }}>
+                            <strong>Clearances Notes:</strong>
+                            <p style={{ whiteSpace: 'pre-wrap', marginTop: '0.5rem' }}>{selectedRequest.appliances.applianceClearancesNotes}</p>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
@@ -362,6 +421,7 @@ const MeasurementRequests = () => {
                       {selectedRequest.specialRequests.extendedOverhangs && <div>✓ Extended overhangs</div>}
                       {selectedRequest.specialRequests.floatingShelves && <div>✓ Floating shelves / hidden brackets</div>}
                       {selectedRequest.specialRequests.embeddedChannelsLightingCharging && <div>✓ Embedded channels / lighting / charging stations</div>}
+                      {selectedRequest.specialRequests.expeditedDelivery && <div>✓ Expedited delivery</div>}
                       {selectedRequest.specialRequests.none && <div>✓ None</div>}
                       {selectedRequest.specialRequests.perDrawingSpec && <div>✓ Per Drawing Spec</div>}
                     </div>

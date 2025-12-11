@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../config/firebase';
 import './MeasurementPage.css';
 
 interface SinkEntry {
@@ -12,6 +13,8 @@ interface SinkEntry {
   physicalSinkOnSite: string;
   revealPreference: string;
   sinkNotes: string;
+  sinkFitmentAcknowledgment: boolean;
+  templateWithoutSinkAcknowledgment: boolean;
 }
 
 interface GrommetEntry {
@@ -19,6 +22,15 @@ interface GrommetEntry {
   sizeInches: string;
   coordinates: string;
   grommetNotes: string;
+}
+
+interface ApplianceEntry {
+  type: string;
+  model: string;
+  specOption: string;
+  specLink: string;
+  specDocumentUrl: string;
+  notes: string;
 }
 
 interface MeasurementFormData {
@@ -54,53 +66,28 @@ interface MeasurementFormData {
   splashObstructions: string;
 
   // Appliances
-  slideInRangeModel: string;
-  slideInRangeSpecOption: string;
-  slideInRangeNotes: string;
-  cooktopModel: string;
-  cooktopSpecOption: string;
-  cooktopNotes: string;
-  wallOvenModel: string;
-  wallOvenSpecOption: string;
-  wallOvenNotes: string;
-  downdraftModel: string;
-  downdraftSpecOption: string;
-  downdraftNotes: string;
-  hoodModel: string;
-  hoodSpecOption: string;
-  hoodNotes: string;
-  refrigeratorModel: string;
-  refrigeratorSpecOption: string;
-  refrigeratorNotes: string;
-  microwaveDrawerModel: string;
-  microwaveDrawerSpecOption: string;
-  microwaveDrawerNotes: string;
-  beverageCenterModel: string;
-  beverageCenterSpecOption: string;
-  beverageCenterNotes: string;
-  otherApplianceDescription: string;
-  otherApplianceModel: string;
-  otherApplianceSpecOption: string;
-  otherApplianceNotes: string;
+  appliances: ApplianceEntry[];
   applianceClearancesNotes: string;
+
+  // Sink Section Acknowledgment
+  sinkTemplateAcknowledgment: boolean;
 
   // Cabinet Layout
   cabinetsInstalledAndLevel: string;
   fillersAndOverhangsSpec: string;
   fillersAndOverhangsNotes: string;
-  outOfSquareOrScribing: string;
-  outOfSquareNotes: string;
   islandOverhangReinforcement: string;
   islandOverhangNotes: string;
 
   // Special Requests
-  radiusCorners: boolean;
   waterfallEdges: boolean;
   miteredEdges: boolean;
-  seamPreferences: boolean;
   extendedOverhangs: boolean;
   floatingShelves: boolean;
   embeddedChannelsLightingCharging: boolean;
+  expeditedDelivery: boolean;
+  thermoforming: boolean;
+  customLayoutMeeting: boolean;
   specialRequestsNone: boolean;
   specialRequestsPerDrawingSpec: boolean;
   specialRequestsNotes: string;
@@ -117,6 +104,7 @@ const MeasurementPage = () => {
     requestedInstallDate: '',
     generalNotes: '',
     sinks: [],
+    appliances: [],
     mainFaucetCount: 0,
     sprayerCount: 0,
     soapDispenserCount: 0,
@@ -132,49 +120,21 @@ const MeasurementPage = () => {
     splashNeeded: '',
     splashHeight: '',
     splashObstructions: '',
-    slideInRangeModel: '',
-    slideInRangeSpecOption: '',
-    slideInRangeNotes: '',
-    cooktopModel: '',
-    cooktopSpecOption: '',
-    cooktopNotes: '',
-    wallOvenModel: '',
-    wallOvenSpecOption: '',
-    wallOvenNotes: '',
-    downdraftModel: '',
-    downdraftSpecOption: '',
-    downdraftNotes: '',
-    hoodModel: '',
-    hoodSpecOption: '',
-    hoodNotes: '',
-    refrigeratorModel: '',
-    refrigeratorSpecOption: '',
-    refrigeratorNotes: '',
-    microwaveDrawerModel: '',
-    microwaveDrawerSpecOption: '',
-    microwaveDrawerNotes: '',
-    beverageCenterModel: '',
-    beverageCenterSpecOption: '',
-    beverageCenterNotes: '',
-    otherApplianceDescription: '',
-    otherApplianceModel: '',
-    otherApplianceSpecOption: '',
-    otherApplianceNotes: '',
     applianceClearancesNotes: '',
+    sinkTemplateAcknowledgment: false,
     cabinetsInstalledAndLevel: '',
     fillersAndOverhangsSpec: '',
     fillersAndOverhangsNotes: '',
-    outOfSquareOrScribing: '',
-    outOfSquareNotes: '',
     islandOverhangReinforcement: '',
     islandOverhangNotes: '',
-    radiusCorners: false,
     waterfallEdges: false,
     miteredEdges: false,
-    seamPreferences: false,
     extendedOverhangs: false,
     floatingShelves: false,
     embeddedChannelsLightingCharging: false,
+    expeditedDelivery: false,
+    thermoforming: false,
+    customLayoutMeeting: false,
     specialRequestsNone: false,
     specialRequestsPerDrawingSpec: false,
     specialRequestsNotes: '',
@@ -183,6 +143,7 @@ const MeasurementPage = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [applianceFiles, setApplianceFiles] = useState<Map<number, File>>(new Map());
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -219,6 +180,8 @@ const MeasurementPage = () => {
           physicalSinkOnSite: '',
           revealPreference: '',
           sinkNotes: '',
+          sinkFitmentAcknowledgment: false,
+          templateWithoutSinkAcknowledgment: false,
         },
       ],
     }));
@@ -231,7 +194,7 @@ const MeasurementPage = () => {
     }));
   };
 
-  const updateSink = (index: number, field: keyof SinkEntry, value: string) => {
+  const updateSink = (index: number, field: keyof SinkEntry, value: string | boolean) => {
     setFormData((prev) => {
       const newSinks = [...prev.sinks];
       newSinks[index] = { ...newSinks[index], [field]: value };
@@ -269,12 +232,132 @@ const MeasurementPage = () => {
     });
   };
 
+  const addAppliance = () => {
+    setFormData((prev) => ({
+      ...prev,
+      appliances: [
+        ...prev.appliances,
+        {
+          type: '',
+          model: '',
+          specOption: '',
+          specLink: '',
+          specDocumentUrl: '',
+          notes: '',
+        },
+      ],
+    }));
+  };
+
+  const removeAppliance = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      appliances: prev.appliances.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateAppliance = (index: number, field: keyof ApplianceEntry, value: string) => {
+    setFormData((prev) => {
+      const newAppliances = [...prev.appliances];
+      newAppliances[index] = { ...newAppliances[index], [field]: value };
+      return { ...prev, appliances: newAppliances };
+    });
+  };
+
+  const handleApplianceFileChange = (index: number, file: File | null) => {
+    if (file) {
+      setApplianceFiles((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(index, file);
+        return newMap;
+      });
+    } else {
+      setApplianceFiles((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(index);
+        return newMap;
+      });
+    }
+  };
+
+  const removeApplianceFile = (index: number) => {
+    setApplianceFiles((prev) => {
+      const newMap = new Map(prev);
+      newMap.delete(index);
+      return newMap;
+    });
+    // Reset file input
+    const fileInput = document.getElementById(`appliance-spec-doc-${index}`) as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
+  };
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitStatus('idle');
 
+    // Validate sink section acknowledgment
+    if (!formData.sinkTemplateAcknowledgment) {
+      alert('Please acknowledge the sink template disclaimer in the Sink Information section.');
+      setIsSubmitting(false);
+      setSubmitStatus('idle');
+      return;
+    }
+
+    // Validate sink fitment acknowledgments
+    const sinksWithoutAcknowledgment = formData.sinks.filter(
+      (sink) => sink.physicalSinkOnSite === 'No' && !sink.sinkFitmentAcknowledgment
+    );
+
+    if (sinksWithoutAcknowledgment.length > 0) {
+      alert('Please acknowledge the sink fitment disclaimer for all sinks where a physical sink is not provided on-site.');
+      setIsSubmitting(false);
+      setSubmitStatus('idle');
+      return;
+    }
+
+    // Validate template without sink acknowledgments
+    const sinksWithTemplateWithoutAcknowledgment = formData.sinks.filter(
+      (sink) => sink.cutoutTemplateProvided === 'Yes (template provided)' && 
+                sink.physicalSinkOnSite === 'No' && 
+                !sink.templateWithoutSinkAcknowledgment
+    );
+
+    if (sinksWithTemplateWithoutAcknowledgment.length > 0) {
+      alert('Please acknowledge that if a sink cutout template is provided without the physical sink present, Bella Stone cannot guarantee sink fitment.');
+      setIsSubmitting(false);
+      setSubmitStatus('idle');
+      return;
+    }
+
     try {
+      // Upload appliance spec documents
+      const appliancesWithDocs = await Promise.all(
+        formData.appliances.map(async (appliance, index) => {
+          const file = applianceFiles.get(index);
+          let specDocumentUrl = appliance.specDocumentUrl;
+          
+          if (file) {
+            try {
+              const timestamp = Date.now();
+              const fileName = `measurement-appliance-specs/${timestamp}-${index}-${file.name}`;
+              const storageRef = ref(storage, fileName);
+              await uploadBytes(storageRef, file);
+              specDocumentUrl = await getDownloadURL(storageRef);
+            } catch (uploadError) {
+              console.error(`Error uploading spec document for appliance ${index + 1}:`, uploadError);
+              alert(`Error uploading spec document for appliance ${index + 1}. Please try again.`);
+              throw uploadError;
+            }
+          }
+          
+          return {
+            ...appliance,
+            specDocumentUrl,
+          };
+        })
+      );
+
       const measurementData = {
         createdAt: serverTimestamp(),
         customerName: formData.customerName.trim(),
@@ -305,71 +388,25 @@ const MeasurementPage = () => {
           obstructions: formData.splashObstructions.trim(),
         },
         appliances: {
-          slideInRange: {
-            model: formData.slideInRangeModel.trim(),
-            specOption: formData.slideInRangeSpecOption,
-            notes: formData.slideInRangeNotes.trim(),
-          },
-          cooktop: {
-            model: formData.cooktopModel.trim(),
-            specOption: formData.cooktopSpecOption,
-            notes: formData.cooktopNotes.trim(),
-          },
-          wallOven: {
-            model: formData.wallOvenModel.trim(),
-            specOption: formData.wallOvenSpecOption,
-            notes: formData.wallOvenNotes.trim(),
-          },
-          downdraft: {
-            model: formData.downdraftModel.trim(),
-            specOption: formData.downdraftSpecOption,
-            notes: formData.downdraftNotes.trim(),
-          },
-          hood: {
-            model: formData.hoodModel.trim(),
-            specOption: formData.hoodSpecOption,
-            notes: formData.hoodNotes.trim(),
-          },
-          refrigerator: {
-            model: formData.refrigeratorModel.trim(),
-            specOption: formData.refrigeratorSpecOption,
-            notes: formData.refrigeratorNotes.trim(),
-          },
-          microwaveDrawer: {
-            model: formData.microwaveDrawerModel.trim(),
-            specOption: formData.microwaveDrawerSpecOption,
-            notes: formData.microwaveDrawerNotes.trim(),
-          },
-          beverageCenter: {
-            model: formData.beverageCenterModel.trim(),
-            specOption: formData.beverageCenterSpecOption,
-            notes: formData.beverageCenterNotes.trim(),
-          },
-          other: {
-            description: formData.otherApplianceDescription.trim(),
-            model: formData.otherApplianceModel.trim(),
-            specOption: formData.otherApplianceSpecOption,
-            notes: formData.otherApplianceNotes.trim(),
-          },
+          items: appliancesWithDocs,
           applianceClearancesNotes: formData.applianceClearancesNotes.trim(),
         },
         cabinetLayout: {
           cabinetsInstalledAndLevel: formData.cabinetsInstalledAndLevel,
           fillersAndOverhangsSpec: formData.fillersAndOverhangsSpec,
           fillersAndOverhangsNotes: formData.fillersAndOverhangsNotes.trim(),
-          outOfSquareOrScribing: formData.outOfSquareOrScribing,
-          outOfSquareNotes: formData.outOfSquareNotes.trim(),
           islandOverhangReinforcement: formData.islandOverhangReinforcement,
           islandOverhangNotes: formData.islandOverhangNotes.trim(),
         },
         specialRequests: {
-          radiusCorners: formData.radiusCorners,
           waterfallEdges: formData.waterfallEdges,
           miteredEdges: formData.miteredEdges,
-          seamPreferences: formData.seamPreferences,
           extendedOverhangs: formData.extendedOverhangs,
           floatingShelves: formData.floatingShelves,
           embeddedChannelsLightingCharging: formData.embeddedChannelsLightingCharging,
+          expeditedDelivery: formData.expeditedDelivery,
+          thermoforming: formData.thermoforming,
+          customLayoutMeeting: formData.customLayoutMeeting,
           none: formData.specialRequestsNone,
           perDrawingSpec: formData.specialRequestsPerDrawingSpec,
           specialRequestsNotes: formData.specialRequestsNotes.trim(),
@@ -390,6 +427,7 @@ const MeasurementPage = () => {
         requestedInstallDate: '',
         generalNotes: '',
         sinks: [],
+        appliances: [],
         mainFaucetCount: 0,
         sprayerCount: 0,
         soapDispenserCount: 0,
@@ -405,54 +443,27 @@ const MeasurementPage = () => {
         splashNeeded: '',
         splashHeight: '',
         splashObstructions: '',
-        slideInRangeModel: '',
-        slideInRangeSpecOption: '',
-        slideInRangeNotes: '',
-        cooktopModel: '',
-        cooktopSpecOption: '',
-        cooktopNotes: '',
-        wallOvenModel: '',
-        wallOvenSpecOption: '',
-        wallOvenNotes: '',
-        downdraftModel: '',
-        downdraftSpecOption: '',
-        downdraftNotes: '',
-        hoodModel: '',
-        hoodSpecOption: '',
-        hoodNotes: '',
-        refrigeratorModel: '',
-        refrigeratorSpecOption: '',
-        refrigeratorNotes: '',
-        microwaveDrawerModel: '',
-        microwaveDrawerSpecOption: '',
-        microwaveDrawerNotes: '',
-        beverageCenterModel: '',
-        beverageCenterSpecOption: '',
-        beverageCenterNotes: '',
-        otherApplianceDescription: '',
-        otherApplianceModel: '',
-        otherApplianceSpecOption: '',
-        otherApplianceNotes: '',
         applianceClearancesNotes: '',
+        sinkTemplateAcknowledgment: false,
         cabinetsInstalledAndLevel: '',
         fillersAndOverhangsSpec: '',
         fillersAndOverhangsNotes: '',
-        outOfSquareOrScribing: '',
-        outOfSquareNotes: '',
         islandOverhangReinforcement: '',
         islandOverhangNotes: '',
-        radiusCorners: false,
         waterfallEdges: false,
         miteredEdges: false,
-        seamPreferences: false,
         extendedOverhangs: false,
         floatingShelves: false,
         embeddedChannelsLightingCharging: false,
+        expeditedDelivery: false,
+        thermoforming: false,
+        customLayoutMeeting: false,
         specialRequestsNone: false,
         specialRequestsPerDrawingSpec: false,
         specialRequestsNotes: '',
         acknowledgeDisclaimers: false,
       });
+      setApplianceFiles(new Map());
     } catch (error) {
       console.error('Error submitting measurement checklist:', error);
       setSubmitStatus('error');
@@ -542,9 +553,7 @@ const MeasurementPage = () => {
           <div className="form-section">
             <h2 className="section-title">Sink Information</h2>
             <p className="section-helper-text">
-              If a sink cutout template is provided without the physical sink present, Bella Stone cannot guarantee sink fitment. The general contractor assumes all responsibility for fitment.
-              <br />
-              Standard reveal is .25–.35" overhang on undermount sinks.
+              Standard overhangs on undermount sinks is .25-.3"
             </p>
 
             {formData.sinks.map((sink, index) => (
@@ -611,7 +620,13 @@ const MeasurementPage = () => {
                   <select
                     id={`sink-template-${index}`}
                     value={sink.cutoutTemplateProvided}
-                    onChange={(e) => updateSink(index, 'cutoutTemplateProvided', e.target.value)}
+                    onChange={(e) => {
+                      updateSink(index, 'cutoutTemplateProvided', e.target.value);
+                      // Reset template acknowledgment if template is not provided or sink is on site
+                      if (e.target.value !== 'Yes (template provided)' || sink.physicalSinkOnSite === 'Yes') {
+                        updateSink(index, 'templateWithoutSinkAcknowledgment', false);
+                      }
+                    }}
                   >
                     <option value="">Select option</option>
                     <option value="Yes (template provided)">Yes (template provided)</option>
@@ -626,13 +641,99 @@ const MeasurementPage = () => {
                   <select
                     id={`sink-physical-${index}`}
                     value={sink.physicalSinkOnSite}
-                    onChange={(e) => updateSink(index, 'physicalSinkOnSite', e.target.value)}
+                    onChange={(e) => {
+                      updateSink(index, 'physicalSinkOnSite', e.target.value);
+                      // Reset acknowledgments if sink is provided
+                      if (e.target.value === 'Yes') {
+                        updateSink(index, 'sinkFitmentAcknowledgment', false);
+                        updateSink(index, 'templateWithoutSinkAcknowledgment', false);
+                      }
+                    }}
                   >
                     <option value="">Select option</option>
                     <option value="Yes">Yes</option>
                     <option value="No">No</option>
                   </select>
                 </div>
+
+                {sink.cutoutTemplateProvided === 'Yes (template provided)' && sink.physicalSinkOnSite === 'No' && (
+                  <div className="form-group">
+                    <div style={{ 
+                      padding: '1rem', 
+                      backgroundColor: '#1a1a1a', 
+                      borderRadius: '6px', 
+                      border: '1px solid #333',
+                      marginTop: '0.5rem'
+                    }}>
+                      <label style={{ 
+                        display: 'flex', 
+                        alignItems: 'flex-start', 
+                        gap: '0.75rem',
+                        cursor: 'pointer',
+                        color: '#e0e0e0'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={sink.templateWithoutSinkAcknowledgment}
+                          onChange={(e) => updateSink(index, 'templateWithoutSinkAcknowledgment', e.target.checked)}
+                          required={sink.cutoutTemplateProvided === 'Yes (template provided)' && sink.physicalSinkOnSite === 'No'}
+                          style={{ 
+                            marginTop: '0.25rem',
+                            cursor: 'pointer',
+                            width: '18px',
+                            height: '18px',
+                            flexShrink: 0
+                          }}
+                        />
+                        <span style={{ fontSize: '0.95rem', lineHeight: '1.5' }}>
+                          I acknowledge that If a sink cutout template is provided without the physical sink present, 
+                          Bella Stone cannot guarantee sink fitment. The general contractor assumes all responsibility for fitment.
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                {sink.physicalSinkOnSite === 'No' && (
+                  <div className="form-group">
+                    <div style={{ 
+                      padding: '1rem', 
+                      backgroundColor: '#1a1a1a', 
+                      borderRadius: '6px', 
+                      border: '1px solid #333',
+                      marginTop: '0.5rem'
+                    }}>
+                      <label style={{ 
+                        display: 'flex', 
+                        alignItems: 'flex-start', 
+                        gap: '0.75rem',
+                        cursor: 'pointer',
+                        color: '#e0e0e0'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={sink.sinkFitmentAcknowledgment}
+                          onChange={(e) => updateSink(index, 'sinkFitmentAcknowledgment', e.target.checked)}
+                          required={sink.physicalSinkOnSite === 'No'}
+                          style={{ 
+                            marginTop: '0.25rem',
+                            cursor: 'pointer',
+                            width: '18px',
+                            height: '18px',
+                            flexShrink: 0
+                          }}
+                        />
+                        <span style={{ fontSize: '0.95rem', lineHeight: '1.5' }}>
+                          I acknowledge that by not providing a physical sink on-site for measurement, 
+                          Bella Stone will not be held responsible for any issues related to sink fitment 
+                          or compatibility. I understand that measurements will be based on provided 
+                          specifications and templates, and I accept full responsibility for ensuring 
+                          the accuracy of these specifications.
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                )}
 
                 <div className="form-group">
                   <label htmlFor={`sink-reveal-${index}`}>Reveal Preference</label>
@@ -667,6 +768,42 @@ const MeasurementPage = () => {
             <button type="button" onClick={addSink} className="add-item-btn">
               Add Sink
             </button>
+
+            <div className="form-group" style={{ marginTop: '2rem' }}>
+              <div style={{ 
+                padding: '1rem', 
+                backgroundColor: '#1a1a1a', 
+                borderRadius: '6px', 
+                border: '1px solid #333'
+              }}>
+                <label style={{ 
+                  display: 'flex', 
+                  alignItems: 'flex-start', 
+                  gap: '0.75rem',
+                  cursor: 'pointer',
+                  color: '#e0e0e0'
+                }}>
+                  <input
+                    type="checkbox"
+                    name="sinkTemplateAcknowledgment"
+                    checked={formData.sinkTemplateAcknowledgment}
+                    onChange={handleChange}
+                    required
+                    style={{ 
+                      marginTop: '0.25rem',
+                      cursor: 'pointer',
+                      width: '18px',
+                      height: '18px',
+                      flexShrink: 0
+                    }}
+                  />
+                  <span style={{ fontSize: '0.95rem', lineHeight: '1.5' }}>
+                    I acknowledge that If a sink cutout template is provided without the physical sink present, 
+                    Bella Stone cannot guarantee sink fitment. The general contractor assumes all responsibility for fitment.
+                  </span>
+                </label>
+              </div>
+            </div>
           </div>
 
           {/* Faucet & Accessory Holes */}
@@ -951,378 +1088,122 @@ const MeasurementPage = () => {
           <div className="form-section">
             <h2 className="section-title">Appliance Specs & Cutouts</h2>
 
-            {/* Slide-in Range */}
-            <div className="appliance-group">
-              <h3 className="appliance-group-title">Slide-in Range</h3>
-              <div className="form-group">
-                <label htmlFor="slideInRangeModel">Model</label>
-                <input
-                  type="text"
-                  id="slideInRangeModel"
-                  name="slideInRangeModel"
-                  value={formData.slideInRangeModel}
-                  onChange={handleChange}
-                  placeholder="Model number"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="slideInRangeSpecOption">Spec Option</label>
-                <select
-                  id="slideInRangeSpecOption"
-                  name="slideInRangeSpecOption"
-                  value={formData.slideInRangeSpecOption}
-                  onChange={handleChange}
-                >
-                  <option value="">Select option</option>
-                  <option value="None">None</option>
-                  <option value="Per Drawing Spec">Per Drawing Spec</option>
-                  <option value="Model Specified">Model Specified</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="slideInRangeNotes">Notes</label>
-                <textarea
-                  id="slideInRangeNotes"
-                  name="slideInRangeNotes"
-                  value={formData.slideInRangeNotes}
-                  onChange={handleChange}
-                  rows={2}
-                />
-              </div>
-            </div>
+            {formData.appliances.map((appliance, index) => (
+              <div key={index} className="repeater-item">
+                <div className="repeater-item-header">
+                  <h3 className="repeater-item-title">Appliance {index + 1}</h3>
+                  <button
+                    type="button"
+                    onClick={() => removeAppliance(index)}
+                    className="remove-item-btn"
+                  >
+                    Remove
+                  </button>
+                </div>
 
-            {/* Cooktop */}
-            <div className="appliance-group">
-              <h3 className="appliance-group-title">Cooktop</h3>
-              <div className="form-group">
-                <label htmlFor="cooktopModel">Model</label>
-                <input
-                  type="text"
-                  id="cooktopModel"
-                  name="cooktopModel"
-                  value={formData.cooktopModel}
-                  onChange={handleChange}
-                  placeholder="Model number"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="cooktopSpecOption">Spec Option</label>
-                <select
-                  id="cooktopSpecOption"
-                  name="cooktopSpecOption"
-                  value={formData.cooktopSpecOption}
-                  onChange={handleChange}
-                >
-                  <option value="">Select option</option>
-                  <option value="None">None</option>
-                  <option value="Per Drawing Spec">Per Drawing Spec</option>
-                  <option value="Model Specified">Model Specified</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="cooktopNotes">Notes</label>
-                <textarea
-                  id="cooktopNotes"
-                  name="cooktopNotes"
-                  value={formData.cooktopNotes}
-                  onChange={handleChange}
-                  rows={2}
-                />
-              </div>
-            </div>
+                <div className="form-group">
+                  <label htmlFor={`appliance-type-${index}`}>Appliance Type *</label>
+                  <select
+                    id={`appliance-type-${index}`}
+                    value={appliance.type}
+                    onChange={(e) => updateAppliance(index, 'type', e.target.value)}
+                    required
+                  >
+                    <option value="">Select appliance type</option>
+                    <option value="Slide-in Range">Slide-in Range</option>
+                    <option value="Cooktop">Cooktop</option>
+                    <option value="Wall Oven">Wall Oven</option>
+                    <option value="Downdraft">Downdraft</option>
+                    <option value="Hood">Hood</option>
+                    <option value="Refrigerator">Refrigerator</option>
+                    <option value="Microwave Drawer">Microwave Drawer</option>
+                    <option value="Beverage Center / Ice Maker">Beverage Center / Ice Maker</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
 
-            {/* Wall Oven */}
-            <div className="appliance-group">
-              <h3 className="appliance-group-title">Wall Oven</h3>
-              <div className="form-group">
-                <label htmlFor="wallOvenModel">Model</label>
-                <input
-                  type="text"
-                  id="wallOvenModel"
-                  name="wallOvenModel"
-                  value={formData.wallOvenModel}
-                  onChange={handleChange}
-                  placeholder="Model number"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="wallOvenSpecOption">Spec Option</label>
-                <select
-                  id="wallOvenSpecOption"
-                  name="wallOvenSpecOption"
-                  value={formData.wallOvenSpecOption}
-                  onChange={handleChange}
-                >
-                  <option value="">Select option</option>
-                  <option value="None">None</option>
-                  <option value="Per Drawing Spec">Per Drawing Spec</option>
-                  <option value="Model Specified">Model Specified</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="wallOvenNotes">Notes</label>
-                <textarea
-                  id="wallOvenNotes"
-                  name="wallOvenNotes"
-                  value={formData.wallOvenNotes}
-                  onChange={handleChange}
-                  rows={2}
-                />
-              </div>
-            </div>
+                <div className="form-group">
+                  <label htmlFor={`appliance-model-${index}`}>Model</label>
+                  <input
+                    type="text"
+                    id={`appliance-model-${index}`}
+                    value={appliance.model}
+                    onChange={(e) => updateAppliance(index, 'model', e.target.value)}
+                    placeholder="Model number"
+                  />
+                </div>
 
-            {/* Downdraft */}
-            <div className="appliance-group">
-              <h3 className="appliance-group-title">Downdraft</h3>
-              <div className="form-group">
-                <label htmlFor="downdraftModel">Model</label>
-                <input
-                  type="text"
-                  id="downdraftModel"
-                  name="downdraftModel"
-                  value={formData.downdraftModel}
-                  onChange={handleChange}
-                  placeholder="Model number"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="downdraftSpecOption">Spec Option</label>
-                <select
-                  id="downdraftSpecOption"
-                  name="downdraftSpecOption"
-                  value={formData.downdraftSpecOption}
-                  onChange={handleChange}
-                >
-                  <option value="">Select option</option>
-                  <option value="None">None</option>
-                  <option value="Per Drawing Spec">Per Drawing Spec</option>
-                  <option value="Model Specified">Model Specified</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="downdraftNotes">Notes</label>
-                <textarea
-                  id="downdraftNotes"
-                  name="downdraftNotes"
-                  value={formData.downdraftNotes}
-                  onChange={handleChange}
-                  rows={2}
-                />
-              </div>
-            </div>
+                <div className="form-group">
+                  <label htmlFor={`appliance-spec-${index}`}>Spec Option</label>
+                  <select
+                    id={`appliance-spec-${index}`}
+                    value={appliance.specOption}
+                    onChange={(e) => updateAppliance(index, 'specOption', e.target.value)}
+                  >
+                    <option value="">Select option</option>
+                    <option value="None">None</option>
+                    <option value="Per Drawing Spec">Per Drawing Spec</option>
+                    <option value="Model Specified">Model Specified</option>
+                  </select>
+                </div>
 
-            {/* Hood */}
-            <div className="appliance-group">
-              <h3 className="appliance-group-title">Hood</h3>
-              <div className="form-group">
-                <label htmlFor="hoodModel">Model</label>
-                <input
-                  type="text"
-                  id="hoodModel"
-                  name="hoodModel"
-                  value={formData.hoodModel}
-                  onChange={handleChange}
-                  placeholder="Model number"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="hoodSpecOption">Spec Option</label>
-                <select
-                  id="hoodSpecOption"
-                  name="hoodSpecOption"
-                  value={formData.hoodSpecOption}
-                  onChange={handleChange}
-                >
-                  <option value="">Select option</option>
-                  <option value="None">None</option>
-                  <option value="Per Drawing Spec">Per Drawing Spec</option>
-                  <option value="Model Specified">Model Specified</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="hoodNotes">Notes</label>
-                <textarea
-                  id="hoodNotes"
-                  name="hoodNotes"
-                  value={formData.hoodNotes}
-                  onChange={handleChange}
-                  rows={2}
-                />
-              </div>
-            </div>
+                <div className="form-group">
+                  <label htmlFor={`appliance-spec-link-${index}`}>Manufacturer Specs Link</label>
+                  <input
+                    type="url"
+                    id={`appliance-spec-link-${index}`}
+                    value={appliance.specLink}
+                    onChange={(e) => updateAppliance(index, 'specLink', e.target.value)}
+                    placeholder="https://manufacturer.com/specs/..."
+                  />
+                </div>
 
-            {/* Refrigerator */}
-            <div className="appliance-group">
-              <h3 className="appliance-group-title">Refrigerator</h3>
-              <div className="form-group">
-                <label htmlFor="refrigeratorModel">Model</label>
-                <input
-                  type="text"
-                  id="refrigeratorModel"
-                  name="refrigeratorModel"
-                  value={formData.refrigeratorModel}
-                  onChange={handleChange}
-                  placeholder="Model number"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="refrigeratorSpecOption">Spec Option</label>
-                <select
-                  id="refrigeratorSpecOption"
-                  name="refrigeratorSpecOption"
-                  value={formData.refrigeratorSpecOption}
-                  onChange={handleChange}
-                >
-                  <option value="">Select option</option>
-                  <option value="None">None</option>
-                  <option value="Per Drawing Spec">Per Drawing Spec</option>
-                  <option value="Model Specified">Model Specified</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="refrigeratorNotes">Notes</label>
-                <textarea
-                  id="refrigeratorNotes"
-                  name="refrigeratorNotes"
-                  value={formData.refrigeratorNotes}
-                  onChange={handleChange}
-                  rows={2}
-                />
-              </div>
-            </div>
+                <div className="form-group">
+                  <label htmlFor={`appliance-spec-doc-${index}`}>Upload Spec Document</label>
+                  <input
+                    type="file"
+                    id={`appliance-spec-doc-${index}`}
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      handleApplianceFileChange(index, file);
+                    }}
+                  />
+                  {applianceFiles.has(index) && (
+                    <div style={{ marginTop: '0.5rem', padding: '0.5rem', backgroundColor: '#0a0a0a', borderRadius: '4px', border: '1px solid #333' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#ccc', fontSize: '0.9rem' }}>{applianceFiles.get(index)?.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeApplianceFile(index)}
+                          className="remove-item-btn"
+                          style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
-            {/* Microwave Drawer */}
-            <div className="appliance-group">
-              <h3 className="appliance-group-title">Microwave Drawer</h3>
-              <div className="form-group">
-                <label htmlFor="microwaveDrawerModel">Model</label>
-                <input
-                  type="text"
-                  id="microwaveDrawerModel"
-                  name="microwaveDrawerModel"
-                  value={formData.microwaveDrawerModel}
-                  onChange={handleChange}
-                  placeholder="Model number"
-                />
+                <div className="form-group">
+                  <label htmlFor={`appliance-notes-${index}`}>Notes</label>
+                  <textarea
+                    id={`appliance-notes-${index}`}
+                    value={appliance.notes}
+                    onChange={(e) => updateAppliance(index, 'notes', e.target.value)}
+                    rows={3}
+                    placeholder="Additional appliance notes..."
+                  />
+                </div>
               </div>
-              <div className="form-group">
-                <label htmlFor="microwaveDrawerSpecOption">Spec Option</label>
-                <select
-                  id="microwaveDrawerSpecOption"
-                  name="microwaveDrawerSpecOption"
-                  value={formData.microwaveDrawerSpecOption}
-                  onChange={handleChange}
-                >
-                  <option value="">Select option</option>
-                  <option value="None">None</option>
-                  <option value="Per Drawing Spec">Per Drawing Spec</option>
-                  <option value="Model Specified">Model Specified</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="microwaveDrawerNotes">Notes</label>
-                <textarea
-                  id="microwaveDrawerNotes"
-                  name="microwaveDrawerNotes"
-                  value={formData.microwaveDrawerNotes}
-                  onChange={handleChange}
-                  rows={2}
-                />
-              </div>
-            </div>
+            ))}
 
-            {/* Beverage Center / Ice Maker */}
-            <div className="appliance-group">
-              <h3 className="appliance-group-title">Beverage Center / Ice Maker</h3>
-              <div className="form-group">
-                <label htmlFor="beverageCenterModel">Model</label>
-                <input
-                  type="text"
-                  id="beverageCenterModel"
-                  name="beverageCenterModel"
-                  value={formData.beverageCenterModel}
-                  onChange={handleChange}
-                  placeholder="Model number"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="beverageCenterSpecOption">Spec Option</label>
-                <select
-                  id="beverageCenterSpecOption"
-                  name="beverageCenterSpecOption"
-                  value={formData.beverageCenterSpecOption}
-                  onChange={handleChange}
-                >
-                  <option value="">Select option</option>
-                  <option value="None">None</option>
-                  <option value="Per Drawing Spec">Per Drawing Spec</option>
-                  <option value="Model Specified">Model Specified</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="beverageCenterNotes">Notes</label>
-                <textarea
-                  id="beverageCenterNotes"
-                  name="beverageCenterNotes"
-                  value={formData.beverageCenterNotes}
-                  onChange={handleChange}
-                  rows={2}
-                />
-              </div>
-            </div>
+            <button type="button" onClick={addAppliance} className="add-item-btn">
+              Add Appliance
+            </button>
 
-            {/* Other Appliance */}
-            <div className="appliance-group">
-              <h3 className="appliance-group-title">Other</h3>
-              <div className="form-group">
-                <label htmlFor="otherApplianceDescription">Description</label>
-                <input
-                  type="text"
-                  id="otherApplianceDescription"
-                  name="otherApplianceDescription"
-                  value={formData.otherApplianceDescription}
-                  onChange={handleChange}
-                  placeholder="Appliance description"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="otherApplianceModel">Model</label>
-                <input
-                  type="text"
-                  id="otherApplianceModel"
-                  name="otherApplianceModel"
-                  value={formData.otherApplianceModel}
-                  onChange={handleChange}
-                  placeholder="Model number"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="otherApplianceSpecOption">Spec Option</label>
-                <select
-                  id="otherApplianceSpecOption"
-                  name="otherApplianceSpecOption"
-                  value={formData.otherApplianceSpecOption}
-                  onChange={handleChange}
-                >
-                  <option value="">Select option</option>
-                  <option value="None">None</option>
-                  <option value="Per Drawing Spec">Per Drawing Spec</option>
-                  <option value="Model Specified">Model Specified</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="otherApplianceNotes">Notes</label>
-                <textarea
-                  id="otherApplianceNotes"
-                  name="otherApplianceNotes"
-                  value={formData.otherApplianceNotes}
-                  onChange={handleChange}
-                  rows={2}
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
+            <div className="form-group" style={{ marginTop: '1.5rem' }}>
               <label htmlFor="applianceClearancesNotes">Appliance Clearances Notes</label>
               <textarea
                 id="applianceClearancesNotes"
@@ -1354,7 +1235,7 @@ const MeasurementPage = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="fillersAndOverhangsSpec">Fillers and Overhangs Spec</label>
+              <label htmlFor="fillersAndOverhangsSpec">Overhang Spec</label>
               <select
                 id="fillersAndOverhangsSpec"
                 name="fillersAndOverhangsSpec"
@@ -1369,36 +1250,11 @@ const MeasurementPage = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="fillersAndOverhangsNotes">Fillers and Overhangs Notes</label>
+              <label htmlFor="fillersAndOverhangsNotes">Overhang Notes</label>
               <textarea
                 id="fillersAndOverhangsNotes"
                 name="fillersAndOverhangsNotes"
                 value={formData.fillersAndOverhangsNotes}
-                onChange={handleChange}
-                rows={3}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="outOfSquareOrScribing">Out of Square or Scribing</label>
-              <select
-                id="outOfSquareOrScribing"
-                name="outOfSquareOrScribing"
-                value={formData.outOfSquareOrScribing}
-                onChange={handleChange}
-              >
-                <option value="">Select option</option>
-                <option value="None">None</option>
-                <option value="Yes (see notes)">Yes (see notes)</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="outOfSquareNotes">Out of Square Notes</label>
-              <textarea
-                id="outOfSquareNotes"
-                name="outOfSquareNotes"
-                value={formData.outOfSquareNotes}
                 onChange={handleChange}
                 rows={3}
               />
@@ -1415,6 +1271,7 @@ const MeasurementPage = () => {
                 <option value="">Select option</option>
                 <option value="Not required (overhang ≤ 10–12&quot;)">Not required (overhang ≤ 10–12")</option>
                 <option value="Required (corbels, steel bars, brackets)">Required (corbels, steel bars, brackets)</option>
+                <option value="Request for Bella Stone to provide">Request for Bella Stone to provide</option>
                 <option value="None">None</option>
                 <option value="Per Drawing Spec">Per Drawing Spec</option>
               </select>
@@ -1440,16 +1297,6 @@ const MeasurementPage = () => {
               <label className="checkbox-label">
                 <input
                   type="checkbox"
-                  name="radiusCorners"
-                  checked={formData.radiusCorners}
-                  onChange={handleChange}
-                />
-                <span>Radius corners</span>
-              </label>
-
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
                   name="waterfallEdges"
                   checked={formData.waterfallEdges}
                   onChange={handleChange}
@@ -1465,16 +1312,6 @@ const MeasurementPage = () => {
                   onChange={handleChange}
                 />
                 <span>Mitered edges</span>
-              </label>
-
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="seamPreferences"
-                  checked={formData.seamPreferences}
-                  onChange={handleChange}
-                />
-                <span>Seam preferences</span>
               </label>
 
               <label className="checkbox-label">
@@ -1505,6 +1342,36 @@ const MeasurementPage = () => {
                   onChange={handleChange}
                 />
                 <span>Embedded channels / lighting / charging stations</span>
+              </label>
+
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="expeditedDelivery"
+                  checked={formData.expeditedDelivery}
+                  onChange={handleChange}
+                />
+                <span>Expedited delivery</span>
+              </label>
+
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="thermoforming"
+                  checked={formData.thermoforming}
+                  onChange={handleChange}
+                />
+                <span>Thermoforming</span>
+              </label>
+
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="customLayoutMeeting"
+                  checked={formData.customLayoutMeeting}
+                  onChange={handleChange}
+                />
+                <span>Custom layout meeting ($300)</span>
               </label>
 
               <label className="checkbox-label">
@@ -1549,7 +1416,10 @@ const MeasurementPage = () => {
                 This checklist must be submitted to Bella Stone prior to field measure to ensure product can be delivered in a timely fashion and all lead-times can be met. Any missing or incomplete information may delay production.
               </p>
               <p>
-                If a sink cutout template is provided without the physical sink present, Bella Stone cannot guarantee sink fitment. The general contractor assumes all responsibility for fitment. Standard reveal is .25–.35" overhang on undermount sinks.
+                If a sink cutout template is provided without the physical sink present, Bella Stone cannot guarantee sink fitment. The general contractor assumes all responsibility for fitment.
+              </p>
+              <p>
+                All layouts are done digitally to the best of the technicians ability within the availabe material quoted for the job. If a custom layout meeting is requested, there may be changes to the quote if more material is necessarry.
               </p>
               <p>
                 Grommet holes drilled on site will require a change order and may not be able to be completed promptly based on available schedule.
