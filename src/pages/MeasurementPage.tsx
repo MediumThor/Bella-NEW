@@ -475,7 +475,7 @@ const MeasurementPage = () => {
   return (
     <div className="measurement-page">
       <div className="measurement-container">
-        <h1 className="measurement-title">Bella Stone – Cabinet Maker Measurement Checklist</h1>
+        <h1 className="measurement-title">Bella Stone – Pre Measurement Checklist</h1>
         <p className="measurement-subtitle">
           This form must be submitted to Bella Stone prior to field measure to ensure timely delivery and correct lead-times.
         </p>
