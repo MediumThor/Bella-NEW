@@ -285,6 +285,16 @@
   border: 1px solid #f5c6cb;
 }
 
+/* Gray out disabled/default dropdown options */
+select option:disabled {
+  color: #666;
+  background-color: #1a1a1a;
+}
+
+select option[value=""] {
+  color: #666;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .measurement-page {

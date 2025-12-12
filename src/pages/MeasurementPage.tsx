@@ -24,6 +24,13 @@ interface GrommetEntry {
   grommetNotes: string;
 }
 
+interface FaucetEntry {
+  location: string;
+  modelNumber: string;
+  spacingNotes: string;
+  notes: string;
+}
+
 interface ApplianceEntry {
   type: string;
   model: string;
@@ -35,6 +42,7 @@ interface ApplianceEntry {
 
 interface MeasurementFormData {
   // Project Information
+  jobName: string;
   customerName: string;
   jobsiteAddress: string;
   contactPhone: string;
@@ -45,6 +53,7 @@ interface MeasurementFormData {
   sinks: SinkEntry[];
 
   // Faucet & Accessories
+  faucets: FaucetEntry[];
   mainFaucetCount: number;
   sprayerCount: number;
   soapDispenserCount: number;
@@ -98,12 +107,14 @@ interface MeasurementFormData {
 
 const MeasurementPage = () => {
   const [formData, setFormData] = useState<MeasurementFormData>({
+    jobName: '',
     customerName: '',
     jobsiteAddress: '',
     contactPhone: '',
     requestedInstallDate: '',
     generalNotes: '',
     sinks: [],
+    faucets: [],
     appliances: [],
     mainFaucetCount: 0,
     sprayerCount: 0,
@@ -144,6 +155,7 @@ const MeasurementPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [applianceFiles, setApplianceFiles] = useState<Map<number, File>>(new Map());
+  const [grommetDrawingFile, setGrommetDrawingFile] = useState<File | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -229,6 +241,36 @@ const MeasurementPage = () => {
       const newGrommets = [...prev.grommets];
       newGrommets[index] = { ...newGrommets[index], [field]: value };
       return { ...prev, grommets: newGrommets };
+    });
+  };
+
+  const addFaucet = () => {
+    setFormData((prev) => ({
+      ...prev,
+      faucets: [
+        ...prev.faucets,
+        {
+          location: '',
+          modelNumber: '',
+          spacingNotes: '',
+          notes: '',
+        },
+      ],
+    }));
+  };
+
+  const removeFaucet = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      faucets: prev.faucets.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateFaucet = (index: number, field: keyof FaucetEntry, value: string) => {
+    setFormData((prev) => {
+      const newFaucets = [...prev.faucets];
+      newFaucets[index] = { ...newFaucets[index], [field]: value };
+      return { ...prev, faucets: newFaucets };
     });
   };
 
@@ -358,14 +400,34 @@ const MeasurementPage = () => {
         })
       );
 
+      // Upload grommet drawing file if provided
+      let grommetDrawingUrl = '';
+      if (grommetDrawingFile && formData.grommetSubmissionMethod === 'Provide marked-up cabinet shop drawings') {
+        try {
+          const timestamp = Date.now();
+          const fileName = `measurement-grommet-drawings/${timestamp}-${grommetDrawingFile.name}`;
+          const storageRef = ref(storage, fileName);
+          await uploadBytes(storageRef, grommetDrawingFile);
+          grommetDrawingUrl = await getDownloadURL(storageRef);
+        } catch (uploadError) {
+          console.error('Error uploading grommet drawing file:', uploadError);
+          alert('Error uploading grommet drawing file. Please try again.');
+          setIsSubmitting(false);
+          setSubmitStatus('idle');
+          return;
+        }
+      }
+
       const measurementData = {
         createdAt: serverTimestamp(),
+        jobName: formData.jobName.trim(),
         customerName: formData.customerName.trim(),
         jobsiteAddress: formData.jobsiteAddress.trim(),
         contactPhone: formData.contactPhone.trim(),
         requestedInstallDate: formData.requestedInstallDate,
         generalNotes: formData.generalNotes.trim(),
         sinks: formData.sinks,
+        faucets: formData.faucets,
         faucetAndAccessories: {
           mainFaucetCount: formData.mainFaucetCount,
           sprayerCount: formData.sprayerCount,
@@ -381,6 +443,7 @@ const MeasurementPage = () => {
         grommets: {
           submissionMethod: formData.grommetSubmissionMethod,
           locations: formData.grommets,
+          drawingFileUrl: grommetDrawingUrl,
         },
         backsplash: {
           splashNeeded: formData.splashNeeded,
@@ -421,12 +484,14 @@ const MeasurementPage = () => {
       setSubmitStatus('success');
       // Reset form
       setFormData({
+        jobName: '',
         customerName: '',
         jobsiteAddress: '',
         contactPhone: '',
         requestedInstallDate: '',
         generalNotes: '',
         sinks: [],
+        faucets: [],
         appliances: [],
         mainFaucetCount: 0,
         sprayerCount: 0,
@@ -464,6 +529,7 @@ const MeasurementPage = () => {
         acknowledgeDisclaimers: false,
       });
       setApplianceFiles(new Map());
+      setGrommetDrawingFile(null);
     } catch (error) {
       console.error('Error submitting measurement checklist:', error);
       setSubmitStatus('error');
@@ -485,6 +551,18 @@ const MeasurementPage = () => {
           <div className="form-section">
             <h2 className="section-title">Project Information</h2>
             
+            <div className="form-group">
+              <label htmlFor="jobName">Job Name</label>
+              <input
+                type="text"
+                id="jobName"
+                name="jobName"
+                value={formData.jobName}
+                onChange={handleChange}
+                placeholder="Job name or project identifier"
+              />
+            </div>
+
             <div className="form-group">
               <label htmlFor="customerName">Customer Name *</label>
               <input
@@ -743,11 +821,8 @@ const MeasurementPage = () => {
                     onChange={(e) => updateSink(index, 'revealPreference', e.target.value)}
                   >
                     <option value="">Select option</option>
-                    <option value="Positive">Positive</option>
-                    <option value="Zero">Zero</option>
-                    <option value="Negative">Negative</option>
                     <option value="Standard (.25–.35&quot; overhang)">Standard (.25–.35" overhang)</option>
-                    <option value="None">None</option>
+                    <option value="Per manufacturer spec">Per manufacturer spec</option>
                     <option value="Per Drawing Spec">Per Drawing Spec</option>
                   </select>
                 </div>
@@ -810,132 +885,69 @@ const MeasurementPage = () => {
           <div className="form-section">
             <h2 className="section-title">Faucet & Accessory Holes</h2>
 
-            <div className="form-group">
-              <label htmlFor="faucetHoleSpec">Faucet Hole Specification</label>
-              <select
-                id="faucetHoleSpec"
-                name="faucetHoleSpec"
-                value={formData.faucetHoleSpec}
-                onChange={handleChange}
-              >
-                <option value="">Select option</option>
-                <option value="None">None</option>
-                <option value="Per Drawing Spec">Per Drawing Spec</option>
-                <option value="Custom (use counts below)">Custom (use counts below)</option>
-              </select>
-            </div>
-
-            {formData.faucetHoleSpec === 'Custom (use counts below)' && (
-              <>
-                <div className="form-group">
-                  <label htmlFor="mainFaucetCount">Main Faucet Count</label>
-                  <input
-                    type="number"
-                    id="mainFaucetCount"
-                    name="mainFaucetCount"
-                    value={formData.mainFaucetCount}
-                    onChange={handleChange}
-                    min="0"
-                  />
+            {formData.faucets.map((faucet, index) => (
+              <div key={index} className="repeater-item">
+                <div className="repeater-item-header">
+                  <h3 className="repeater-item-title">Faucet {index + 1}</h3>
+                  <button
+                    type="button"
+                    onClick={() => removeFaucet(index)}
+                    className="remove-item-btn"
+                  >
+                    Remove
+                  </button>
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="sprayerCount">Sprayer Count</label>
-                  <input
-                    type="number"
-                    id="sprayerCount"
-                    name="sprayerCount"
-                    value={formData.sprayerCount}
-                    onChange={handleChange}
-                    min="0"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="soapDispenserCount">Soap Dispenser Count</label>
-                  <input
-                    type="number"
-                    id="soapDispenserCount"
-                    name="soapDispenserCount"
-                    value={formData.soapDispenserCount}
-                    onChange={handleChange}
-                    min="0"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="airGapCount">Air Gap Count</label>
-                  <input
-                    type="number"
-                    id="airGapCount"
-                    name="airGapCount"
-                    value={formData.airGapCount}
-                    onChange={handleChange}
-                    min="0"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="roFaucetCount">RO Faucet Count</label>
-                  <input
-                    type="number"
-                    id="roFaucetCount"
-                    name="roFaucetCount"
-                    value={formData.roFaucetCount}
-                    onChange={handleChange}
-                    min="0"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="hotWaterTapCount">Hot Water Tap Count</label>
-                  <input
-                    type="number"
-                    id="hotWaterTapCount"
-                    name="hotWaterTapCount"
-                    value={formData.hotWaterTapCount}
-                    onChange={handleChange}
-                    min="0"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="otherDescription">Other Description</label>
+                  <label htmlFor={`faucet-location-${index}`}>Location *</label>
                   <input
                     type="text"
-                    id="otherDescription"
-                    name="otherDescription"
-                    value={formData.otherDescription}
-                    onChange={handleChange}
-                    placeholder="Describe other accessory"
+                    id={`faucet-location-${index}`}
+                    value={faucet.location}
+                    onChange={(e) => updateFaucet(index, 'location', e.target.value)}
+                    required
+                    placeholder="e.g., Kitchen, Island, Bar"
                   />
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="otherCount">Other Count</label>
+                  <label htmlFor={`faucet-model-${index}`}>Model Number</label>
                   <input
-                    type="number"
-                    id="otherCount"
-                    name="otherCount"
-                    value={formData.otherCount}
-                    onChange={handleChange}
-                    min="0"
+                    type="text"
+                    id={`faucet-model-${index}`}
+                    value={faucet.modelNumber}
+                    onChange={(e) => updateFaucet(index, 'modelNumber', e.target.value)}
+                    placeholder="Faucet model number"
                   />
                 </div>
-              </>
-            )}
 
-            <div className="form-group">
-              <label htmlFor="faucetSpacingNotes">Faucet Spacing Notes</label>
-              <textarea
-                id="faucetSpacingNotes"
-                name="faucetSpacingNotes"
-                value={formData.faucetSpacingNotes}
-                onChange={handleChange}
-                rows={3}
-                placeholder="Specify spacing or indicate 'Per Drawing Spec'."
-              />
-            </div>
+                <div className="form-group">
+                  <label htmlFor={`faucet-spacing-${index}`}>Spacing Notes</label>
+                  <textarea
+                    id={`faucet-spacing-${index}`}
+                    value={faucet.spacingNotes}
+                    onChange={(e) => updateFaucet(index, 'spacingNotes', e.target.value)}
+                    rows={3}
+                    placeholder="Faucet spacing specifications..."
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor={`faucet-notes-${index}`}>Notes</label>
+                  <textarea
+                    id={`faucet-notes-${index}`}
+                    value={faucet.notes}
+                    onChange={(e) => updateFaucet(index, 'notes', e.target.value)}
+                    rows={3}
+                    placeholder="Additional faucet notes..."
+                  />
+                </div>
+              </div>
+            ))}
+
+            <button type="button" onClick={addFaucet} className="add-item-btn">
+              Add Faucet
+            </button>
           </div>
 
           {/* Grommet Hole Locations */}
@@ -958,7 +970,7 @@ const MeasurementPage = () => {
                 onChange={handleChange}
                 required
               >
-                <option value="">Select method</option>
+                <option value="" disabled>Select method</option>
                 <option value="Directly in this form">Directly in this form</option>
                 <option value="Provide marked-up cabinet shop drawings">Provide marked-up cabinet shop drawings</option>
                 <option value="Request Bella Stone submittal post-measure">Request Bella Stone submittal post-measure</option>
@@ -966,6 +978,52 @@ const MeasurementPage = () => {
                 <option value="Per Drawing Spec">Per Drawing Spec</option>
               </select>
             </div>
+
+            {formData.grommetSubmissionMethod === 'Provide marked-up cabinet shop drawings' && (
+              <div className="form-group" style={{ marginTop: '1rem' }}>
+                <label htmlFor="grommetDrawingFile">Upload Marked-Up Cabinet Shop Drawings</label>
+                <input
+                  type="file"
+                  id="grommetDrawingFile"
+                  accept=".pdf,.jpg,.jpeg,.png,.dwg,.dxf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setGrommetDrawingFile(file);
+                  }}
+                />
+                {grommetDrawingFile && (
+                  <div style={{ marginTop: '0.5rem', padding: '0.5rem', backgroundColor: '#0a0a0a', borderRadius: '4px', border: '1px solid #333' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: '#ccc', fontSize: '0.9rem' }}>{grommetDrawingFile.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGrommetDrawingFile(null);
+                          const fileInput = document.getElementById('grommetDrawingFile') as HTMLInputElement;
+                          if (fileInput) fileInput.value = '';
+                        }}
+                        className="remove-item-btn"
+                        style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <p style={{ 
+                  marginTop: '0.75rem', 
+                  padding: '0.75rem', 
+                  backgroundColor: '#1a1a1a', 
+                  borderRadius: '4px', 
+                  border: '1px solid #333',
+                  color: '#e0e0e0',
+                  fontSize: '0.9rem',
+                  lineHeight: '1.5'
+                }}>
+                  <strong>Note:</strong> No install date will be provided until hole locations are submitted.
+                </p>
+              </div>
+            )}
 
             {formData.grommetSubmissionMethod === 'Directly in this form' && (
               <>
@@ -1242,11 +1300,14 @@ const MeasurementPage = () => {
                 value={formData.fillersAndOverhangsSpec}
                 onChange={handleChange}
               >
-                <option value="">Select option</option>
+                <option value="" disabled>Select option</option>
                 <option value="None">None</option>
                 <option value="Per Drawing Spec">Per Drawing Spec</option>
                 <option value="Custom">Custom</option>
               </select>
+              <p className="section-helper-text" style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
+                Unsupported overhang: 8" for 3cm natural stone or 14" for 3cm quartz
+              </p>
             </div>
 
             <div className="form-group">
@@ -1268,7 +1329,7 @@ const MeasurementPage = () => {
                 value={formData.islandOverhangReinforcement}
                 onChange={handleChange}
               >
-                <option value="">Select option</option>
+                <option value="" disabled>Select option</option>
                 <option value="Not required (overhang ≤ 10–12&quot;)">Not required (overhang ≤ 10–12")</option>
                 <option value="Required (corbels, steel bars, brackets)">Required (corbels, steel bars, brackets)</option>
                 <option value="Request for Bella Stone to provide">Request for Bella Stone to provide</option>
