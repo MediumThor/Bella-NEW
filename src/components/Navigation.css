@@ -131,18 +131,22 @@
 }
 
 .nav-sign-in {
-  background-color: #EADAB6;
-  color: #000 !important;
-  padding: 0.5rem 1.5rem !important;
-  border-radius: 6px;
-  font-weight: 600;
+  background: transparent;
+  color: #EADAB6 !important;
+  padding: 0.55rem 1.25rem !important;
+  border-radius: 999px;
+  font-weight: 650;
   text-shadow: none !important;
-  transition: background-color 0.3s ease;
+  border: none;
+  box-shadow: none;
+  transition: transform 140ms ease, background-color 140ms ease, color 140ms ease;
 }
 
 .nav-sign-in:hover {
-  background-color: #FFBFA9;
-  color: #000 !important;
+  background: transparent;
+  color: #ffffff !important;
+  background-color: rgba(234, 218, 182, 0.08);
+  transform: translateY(-1px);
 }
 
 .nav-sign-in::after {
@@ -281,7 +285,7 @@
     top: 100% !important;
     left: 0 !important;
     width: 100vw !important;
-    background-color: #ffffff !important;
+    background-color: #000000 !important;
     flex-direction: column !important;
     align-items: flex-start !important;
     padding: 1rem 1.5rem !important;
@@ -291,7 +295,7 @@
     margin: 0 !important;
     list-style: none !important;
     display: none !important;
-    border-top: 1px solid #e8e8e8 !important;
+    border-top: 1px solid #333 !important;
   }
 
   .nav-menu.open {
@@ -304,7 +308,7 @@
 
   .nav-menu li {
     width: 100% !important;
-    border-bottom: 1px solid #e8e8e8 !important;
+    border-bottom: 1px solid #1f1f1f !important;
     display: block !important;
   }
 
@@ -313,7 +317,7 @@
     padding: 1rem 0 !important;
     font-size: 16px !important;
     width: 100% !important;
-    color: #1a1a1a !important;
+    color: #ffffff !important;
     text-decoration: none !important;
     visibility: visible !important;
     opacity: 1 !important;
@@ -324,8 +328,17 @@
   }
 
   .nav-menu li a.active {
-    color: #1a73e8;
+    color: #EADAB6;
     font-weight: 600;
+  }
+
+  .nav-menu li a.nav-sign-in {
+    margin-top: 0.5rem;
+    display: inline-flex !important;
+    width: auto !important;
+    padding: 0.6rem 1.1rem !important;
+    border-radius: 999px;
+    color: #EADAB6 !important;
   }
 
   .nav-dropdown {

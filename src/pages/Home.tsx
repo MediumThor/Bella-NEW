@@ -155,11 +155,11 @@ const Home = () => {
 
       {/* Slideshow Section */}
       <section className="slideshow-section" ref={addToRefs}>
-        <div className="slideshow-wrapper">
+        <div className="home-slideshow-wrapper">
           {loadingHomeSlides ? (
             <div className="loading">Loading gallery...</div>
           ) : (
-            <ImageSlideshow images={homeSlides} />
+            <ImageSlideshow images={homeSlides} title="Gallery" />
           )}
         </div>
       </section> 
