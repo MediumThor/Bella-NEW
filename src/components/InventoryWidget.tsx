@@ -1,21 +1,15 @@
 import { useEffect } from 'react';
+import { inventoryWidgetConfig } from '../config/kallistiWidgets';
 
 const SCRIPT_ID = 'kallisti-inventory-widget';
 
-const WIDGET_SRC =
-  import.meta.env.VITE_KALLISTI_INVENTORY_WIDGET_SRC ??
-  'http://localhost:5173/embed/inventory-widget.js';
-const WIDGET_COMPANY =
-  import.meta.env.VITE_KALLISTI_INVENTORY_WIDGET_COMPANY ??
-  import.meta.env.VITE_KALLISTI_WIDGET_COMPANY ??
-  'bella-stone-hlzclr';
-const WIDGET_TOKEN =
-  import.meta.env.VITE_KALLISTI_INVENTORY_WIDGET_TOKEN ??
-  '1ZnI2AnF411jo8ZbqOXOJUGZom9dJ6-H';
-const WIDGET_THEME =
-  import.meta.env.VITE_KALLISTI_INVENTORY_WIDGET_THEME ?? 'dark';
-const WIDGET_LABEL =
-  import.meta.env.VITE_KALLISTI_INVENTORY_WIDGET_LABEL ?? 'In-stock slabs';
+const {
+  src: WIDGET_SRC,
+  company: WIDGET_COMPANY,
+  token: WIDGET_TOKEN,
+  theme: WIDGET_THEME,
+  label: WIDGET_LABEL,
+} = inventoryWidgetConfig;
 
 function removeWidgetDom(targetId: string) {
   document.getElementById(SCRIPT_ID)?.remove();

@@ -1,15 +1,10 @@
 import { useEffect } from 'react';
+import { quoteWidgetConfig } from '../config/kallistiWidgets';
 
 const SCRIPT_ID = 'kallisti-quote-widget';
 
-const WIDGET_SRC =
-  import.meta.env.VITE_KALLISTI_WIDGET_SRC ?? 'http://localhost:5173/embed/widget.js';
-const WIDGET_COMPANY =
-  import.meta.env.VITE_KALLISTI_WIDGET_COMPANY ?? 'bella-stone-hlzclr';
-const WIDGET_TOKEN =
-  import.meta.env.VITE_KALLISTI_WIDGET_TOKEN ?? 'oOteBYnNaKLRQmH7xrHWs6Sr3780j9d6';
-const WIDGET_ACCENT = import.meta.env.VITE_KALLISTI_WIDGET_ACCENT ?? '#111827';
-const WIDGET_LABEL = import.meta.env.VITE_KALLISTI_WIDGET_LABEL ?? 'Request a quote';
+const { src: WIDGET_SRC, company: WIDGET_COMPANY, token: WIDGET_TOKEN, accent: WIDGET_ACCENT, label: WIDGET_LABEL } =
+  quoteWidgetConfig;
 
 function removeWidgetDom() {
   document.getElementById(SCRIPT_ID)?.remove();
