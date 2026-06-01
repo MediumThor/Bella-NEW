@@ -12,6 +12,19 @@ function widgetOrigin(): string {
   return import.meta.env.DEV ? devOrigin : KALLISTI_ORIGIN;
 }
 
+function inventoryWidgetSrc(): string {
+  const configured = envValue(import.meta.env.VITE_KALLISTI_INVENTORY_WIDGET_SRC);
+  if (configured?.includes('/embed/inventory-widget.js')) return configured;
+
+  if (configured && import.meta.env.DEV) {
+    console.warn(
+      '[Kallisti] VITE_KALLISTI_INVENTORY_WIDGET_SRC must point to /embed/inventory-widget.js, not widget.js.',
+    );
+  }
+
+  return `${widgetOrigin()}/embed/inventory-widget.js`;
+}
+
 export const KALLISTI_WIDGET_COMPANY =
   envValue(import.meta.env.VITE_KALLISTI_WIDGET_COMPANY) ??
   envValue(import.meta.env.VITE_KALLISTI_INVENTORY_WIDGET_COMPANY) ??
@@ -30,9 +43,7 @@ export const quoteWidgetConfig = {
 };
 
 export const inventoryWidgetConfig = {
-  src:
-    envValue(import.meta.env.VITE_KALLISTI_INVENTORY_WIDGET_SRC) ??
-    `${widgetOrigin()}/embed/inventory-widget.js`,
+  src: inventoryWidgetSrc(),
   company:
     envValue(import.meta.env.VITE_KALLISTI_INVENTORY_WIDGET_COMPANY) ??
     KALLISTI_WIDGET_COMPANY,
