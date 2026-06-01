@@ -142,7 +142,7 @@
 
 .inventory-widget-mount {
   width: 100%;
-  min-height: clamp(520px, 72vh, 860px);
+  min-height: 70vh;
   line-height: 0;
   background: var(--bs-black-elevated);
 }
@@ -182,6 +182,6 @@
   }
 
   .inventory-widget-mount {
-    min-height: clamp(480px, 68vh, 720px);
+    min-height: 70vh;
   }
 }

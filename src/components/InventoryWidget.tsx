@@ -11,14 +11,16 @@ const WIDGET_COMPANY =
   'bella-stone-hlzclr';
 const WIDGET_TOKEN =
   import.meta.env.VITE_KALLISTI_INVENTORY_WIDGET_TOKEN ??
-  'j-3nVRhNUsahA3Z4saNj6Buj15P5VOrP';
+  '1ZnI2AnF411jo8ZbqOXOJUGZom9dJ6-H';
 const WIDGET_THEME =
   import.meta.env.VITE_KALLISTI_INVENTORY_WIDGET_THEME ?? 'dark';
 const WIDGET_LABEL =
   import.meta.env.VITE_KALLISTI_INVENTORY_WIDGET_LABEL ?? 'In-stock slabs';
 
-function removeWidgetScript() {
+function removeWidgetDom(targetId: string) {
   document.getElementById(SCRIPT_ID)?.remove();
+  document.getElementById('kallisti-inv-embed')?.remove();
+  document.getElementById(targetId)?.replaceChildren();
 }
 
 interface InventoryWidgetProps {
@@ -42,7 +44,7 @@ const InventoryWidget = ({ targetId = 'in-stock-slabs' }: InventoryWidgetProps) 
     script.setAttribute('data-label', WIDGET_LABEL);
     document.body.appendChild(script);
 
-    return removeWidgetScript;
+    return () => removeWidgetDom(targetId);
   }, [targetId]);
 
   return null;
