@@ -108,10 +108,20 @@
   inset: 0;
   border: none;
   padding: 0;
+  border-radius: 0;
   background: rgba(0, 0, 0, 0.88);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  box-shadow: none;
+  transform: none;
   cursor: pointer;
+}
+
+.gallery-lightbox__backdrop:hover {
+  background: rgba(0, 0, 0, 0.88);
+  border-color: transparent;
+  transform: none;
+  box-shadow: none;
 }
 
 .gallery-lightbox__panel {
