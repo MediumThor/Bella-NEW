@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import '../styles/admin.css';
 import './AdminLogin.css';
 
 const AdminLogin = () => {
@@ -29,15 +30,15 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="admin-login-container">
-      <div className="admin-login-card">
+    <div className="admin-app bs-page-bg admin-login-page">
+      <div className="admin-login-card glass-panel--elevated">
         <h1>Admin Login</h1>
-        <p className="login-subtitle">Sign in to manage blog posts</p>
+        <p className="login-subtitle">Sign in to manage Bella Stone</p>
 
         {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-group">
+          <div className="admin-form-group">
             <label htmlFor="email">Email</label>
             <input
               type="email"
@@ -49,7 +50,7 @@ const AdminLogin = () => {
             />
           </div>
 
-          <div className="form-group">
+          <div className="admin-form-group">
             <label htmlFor="password">Password</label>
             <input
               type="password"
@@ -65,11 +66,9 @@ const AdminLogin = () => {
             {loading ? 'Logging in...' : 'Sign In'}
           </button>
         </form>
-
       </div>
     </div>
   );
 };
 
 export default AdminLogin;
-

@@ -2,11 +2,11 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #000000;
+  background-color: var(--bs-black);
 }
 
 .main-content {
   flex: 1;
-  background-color: #000000;
-  padding-top: 120px; /* Account for fixed navigation header */
+  background-color: var(--bs-black);
+  padding-top: var(--bs-nav-height);
 }

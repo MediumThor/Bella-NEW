@@ -8,11 +8,13 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "download-homepage-image": "node download-homepage-image.mjs"
+    "download-homepage-image": "node download-homepage-image.mjs",
+    "optimize-images": "node scripts/optimize-public-images.mjs"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
     "firebase": "^10.14.1",
+    "motion": "^12.40.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-icons": "^5.5.0",

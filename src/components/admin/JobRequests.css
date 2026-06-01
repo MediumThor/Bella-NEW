@@ -1,5 +1,4 @@
 .job-requests {
-  padding: 2rem;
   max-width: 100%;
 }
 
@@ -13,8 +12,8 @@
 }
 
 .job-requests-header h2 {
-  color: #EADAB6;
-  font-size: 2rem;
+  color: var(--bs-cream);
+  font-size: 1.35rem;
   margin: 0;
 }
 
@@ -41,9 +40,9 @@
 }
 
 .filter-btn.active {
-  background-color: #EADAB6;
-  color: #000;
-  border-color: #EADAB6;
+  background: linear-gradient(135deg, var(--bs-gold-soft), var(--bs-gold));
+  color: var(--bs-black);
+  border-color: transparent;
 }
 
 .job-requests-container {

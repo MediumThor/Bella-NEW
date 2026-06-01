@@ -1,267 +1,220 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type TouchEvent,
+} from 'react';
+import { createPortal } from 'react-dom';
 import './ImageSlideshow.css';
 
 interface ImageSlideshowProps {
   images: string[];
-  title?: string;
 }
 
-const ImageSlideshow = ({ images, title }: ImageSlideshowProps) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
-  const [isVisible, setIsVisible] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const autoplayTimerRef = useRef<number | null>(null);
-  const lastInteractionAtRef = useRef<number>(0);
+interface GalleryLightboxProps {
+  images: string[];
+  startIndex: number;
+  onClose: () => void;
+}
 
-  // Intersection Observer to only load images when slideshow is visible
+const SECONDS_PER_IMAGE = 4;
+const SWIPE_THRESHOLD = 48;
+
+const GalleryLightbox = ({ images, startIndex, onClose }: GalleryLightboxProps) => {
+  const [index, setIndex] = useState(startIndex);
+  const touchStartX = useRef(0);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const count = images.length;
+
+  const goPrev = useCallback(() => {
+    setIndex((current) => (current - 1 + count) % count);
+  }, [count]);
+
+  const goNext = useCallback(() => {
+    setIndex((current) => (current + 1) % count);
+  }, [count]);
+
   useEffect(() => {
-    if (!containerRef.current) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    closeRef.current?.focus();
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+      if (event.key === 'ArrowLeft') goPrev();
+      if (event.key === 'ArrowRight') goNext();
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [goNext, goPrev, onClose]);
+
+  const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    touchStartX.current = event.touches[0]?.clientX ?? 0;
+  };
+
+  const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+
+    const delta = touch.clientX - touchStartX.current;
+    if (Math.abs(delta) < SWIPE_THRESHOLD) return;
+
+    if (delta < 0) goNext();
+    else goPrev();
+  };
+
+  return createPortal(
+    <div
+      className="gallery-lightbox"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Image gallery"
+    >
+      <button
+        type="button"
+        className="gallery-lightbox__backdrop"
+        onClick={onClose}
+        aria-label="Close gallery"
+      />
+
+      <div
+        className="gallery-lightbox__panel"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        <button
+          ref={closeRef}
+          type="button"
+          className="gallery-lightbox__close"
+          onClick={onClose}
+          aria-label="Close gallery"
+        >
+          ×
+        </button>
+
+        {count > 1 && (
+          <button
+            type="button"
+            className="gallery-lightbox__nav gallery-lightbox__nav--prev"
+            onClick={goPrev}
+            aria-label="Previous image"
+          >
+            ‹
+          </button>
+        )}
+
+        <figure className="gallery-lightbox__figure">
+          <img
+            className="gallery-lightbox__img"
+            src={images[index]}
+            alt=""
+            decoding="async"
+            draggable={false}
+          />
+          <figcaption className="gallery-lightbox__counter">
+            {index + 1} / {count}
+          </figcaption>
+        </figure>
+
+        {count > 1 && (
+          <button
+            type="button"
+            className="gallery-lightbox__nav gallery-lightbox__nav--next"
+            onClick={goNext}
+            aria-label="Next image"
+          >
+            ›
+          </button>
+        )}
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+const ImageSlideshow = ({ images }: ImageSlideshowProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-          }
+          setIsVisible(entry.isIntersecting);
         });
       },
       { threshold: 0.1 }
     );
 
-    observer.observe(containerRef.current);
-
-    return () => {
-      if (containerRef.current) {
-        observer.unobserve(containerRef.current);
-      }
-    };
+    observer.observe(node);
+    return () => observer.disconnect();
   }, []);
 
-  const slideCount = images.length;
+  if (images.length === 0) return null;
 
-  const normalizedIndex = useMemo(() => {
-    if (slideCount <= 0) return 0;
-    return ((currentIndex % slideCount) + slideCount) % slideCount;
-  }, [currentIndex, slideCount]);
+  const loop = [...images, ...images];
+  const scrollDuration = images.length * SECONDS_PER_IMAGE;
 
-  // Preload current, next, and previous images only when visible
-  useEffect(() => {
-    if (!isVisible || slideCount === 0) return;
-
-    const imagesToLoad = new Set<number>();
-    imagesToLoad.add(normalizedIndex);
-    imagesToLoad.add((normalizedIndex + 1) % slideCount);
-    imagesToLoad.add((normalizedIndex - 1 + slideCount) % slideCount);
-
-    imagesToLoad.forEach((index) => {
-      if (!loadedImages.has(index) && images[index]) {
-        const img = new Image();
-        img.src = images[index];
-        img.onload = () => {
-          setLoadedImages((prev) => new Set(prev).add(index));
-        };
-        img.onerror = () => {
-          console.error(`Failed to load image at index ${index}`);
-        };
-      }
-    });
-  }, [images, isVisible, loadedImages, normalizedIndex, slideCount]);
-
-  const pause = useCallback(() => {
-    lastInteractionAtRef.current = Date.now();
-    setIsPlaying(false);
-  }, []);
-
-  const scrollToIndex = useCallback(
-    (index: number, behavior: ScrollBehavior = 'smooth') => {
-      const viewport = viewportRef.current;
-      if (!viewport) return;
-      const width = viewport.clientWidth;
-      if (width <= 0) return;
-
-      const nextIndex = slideCount <= 0 ? 0 : ((index % slideCount) + slideCount) % slideCount;
-      viewport.scrollTo({ left: nextIndex * width, behavior });
-    },
-    [slideCount]
-  );
-
-  const goToSlide = useCallback(
-    (index: number) => {
-      pause();
-      setCurrentIndex(index);
-      scrollToIndex(index, 'smooth');
-    },
-    [pause, scrollToIndex]
-  );
-
-  const goToPrevious = useCallback(() => {
-    pause();
-    const next = normalizedIndex - 1;
-    setCurrentIndex(next);
-    scrollToIndex(next, 'smooth');
-  }, [normalizedIndex, pause, scrollToIndex]);
-
-  const goToNext = useCallback(() => {
-    pause();
-    const next = normalizedIndex + 1;
-    setCurrentIndex(next);
-    scrollToIndex(next, 'smooth');
-  }, [normalizedIndex, pause, scrollToIndex]);
-
-  // Keep scroll position aligned to current slide (initial + resize)
-  useEffect(() => {
-    if (slideCount === 0) return;
-    // No smooth on first paint / resize reflow
-    scrollToIndex(normalizedIndex, 'auto');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slideCount]);
-
-  useEffect(() => {
-    if (slideCount === 0) return;
-    const handleResize = () => scrollToIndex(normalizedIndex, 'auto');
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [normalizedIndex, scrollToIndex, slideCount]);
-
-  // Autoplay (only when visible + more than 1 slide)
-  useEffect(() => {
-    if (!isVisible || !isPlaying) return;
-    if (slideCount <= 1) return;
-
-    if (autoplayTimerRef.current) {
-      window.clearInterval(autoplayTimerRef.current);
-    }
-
-    autoplayTimerRef.current = window.setInterval(() => {
-      // If user just interacted, don't immediately “fight back”
-      if (Date.now() - lastInteractionAtRef.current < 4000) return;
-      const next = normalizedIndex + 1;
-      setCurrentIndex(next);
-      scrollToIndex(next, 'smooth');
-    }, 5500);
-
-    return () => {
-      if (autoplayTimerRef.current) {
-        window.clearInterval(autoplayTimerRef.current);
-        autoplayTimerRef.current = null;
-      }
-    };
-  }, [isPlaying, isVisible, normalizedIndex, scrollToIndex, slideCount]);
-
-  const handleScroll = useCallback(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-    const width = viewport.clientWidth;
-    if (width <= 0) return;
-    const nextIndex = Math.round(viewport.scrollLeft / width);
-    if (nextIndex !== normalizedIndex) {
-      setCurrentIndex(nextIndex);
-    }
-  }, [normalizedIndex]);
-
-  const handlePointerDown = useCallback(() => {
-    // any touch / drag should pause autoplay
-    pause();
-  }, [pause]);
-
-  if (slideCount === 0) return null;
+  const openLightbox = (itemIndex: number) => {
+    setLightboxIndex(itemIndex % images.length);
+  };
 
   return (
-    <div
-      className="image-slideshow"
-      ref={containerRef}
-      aria-roledescription="carousel"
-      aria-label={title ?? 'Image carousel'}
-      onPointerDown={handlePointerDown}
-      onTouchStart={handlePointerDown}
-      onWheel={pause}
-      onKeyDown={(e) => {
-        if (e.key === 'ArrowLeft') goToPrevious();
-        if (e.key === 'ArrowRight') goToNext();
-      }}
-      tabIndex={0}
-    >
-      {title && <h3 className="image-slideshow__title">{title}</h3>}
-      <div className="image-slideshow__frame">
-        <button
-          className="image-slideshow__nav image-slideshow__nav--prev"
-          onClick={goToPrevious}
-          aria-label="Previous image"
-          type="button"
-        >
-          ‹
-        </button>
+    <>
+      <div className="image-slideshow" ref={containerRef} aria-label="Project images">
+        <div className="image-slideshow__frame glass-panel glass-panel--elevated">
+          <div
+            className={`image-slideshow__track${isVisible ? ' is-scrolling' : ''}`}
+            style={{ '--scroll-duration': `${scrollDuration}s` } as CSSProperties}
+          >
+            {loop.map((src, index) => {
+              const imageIndex = index % images.length;
 
-        <div
-          className="image-slideshow__viewport"
-          ref={viewportRef}
-          onScroll={handleScroll}
-        >
-          {images.map((src, index) => {
-            const isLoaded = loadedImages.has(index);
-            const isActive = index === normalizedIndex;
-            return (
-              <div
-                key={`${src}-${index}`}
-                className="image-slideshow__slide"
-                role="group"
-                aria-roledescription="slide"
-                aria-label={`${index + 1} of ${slideCount}`}
-              >
-                {!isLoaded && (
-                  <div className="image-slideshow__loading" aria-hidden="true">
-                    <div className="image-slideshow__spinner" />
-                  </div>
-                )}
-                <img
-                  className={`image-slideshow__img ${isLoaded ? 'is-loaded' : 'is-loading'}`}
-                  src={src}
-                  alt=""
-                  loading={index === 0 ? 'eager' : 'lazy'}
-                  decoding="async"
-                  draggable={false}
-                  style={{ opacity: isLoaded ? 1 : 0 }}
-                />
-                {isActive && (
-                  <div className="image-slideshow__sheen" aria-hidden="true" />
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <button
-          className="image-slideshow__nav image-slideshow__nav--next"
-          onClick={goToNext}
-          aria-label="Next image"
-          type="button"
-        >
-          ›
-        </button>
-
-        <div className="image-slideshow__indicators" aria-label="Choose slide">
-          {images.map((_, index) => (
-            <button
-              key={index}
-              className={`image-slideshow__dot ${index === normalizedIndex ? 'is-active' : ''}`}
-              onClick={() => goToSlide(index)}
-              aria-label={`Go to slide ${index + 1}`}
-              aria-current={index === normalizedIndex ? 'true' : undefined}
-              type="button"
-            />
-          ))}
+              return (
+                <button
+                  key={`${src}-${index}`}
+                  type="button"
+                  className="image-slideshow__item"
+                  onClick={() => openLightbox(imageIndex)}
+                  aria-label={`View image ${imageIndex + 1} of ${images.length}`}
+                >
+                  <img
+                    src={src}
+                    alt=""
+                    loading={index < 2 ? 'eager' : 'lazy'}
+                    fetchPriority={index === 0 ? 'high' : undefined}
+                    decoding="async"
+                    draggable={false}
+                  />
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      <div className="image-slideshow__counter" aria-live="polite">
-        {normalizedIndex + 1} / {slideCount}
-      </div>
-    </div>
+      {lightboxIndex !== null && (
+        <GalleryLightbox
+          images={images}
+          startIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
+    </>
   );
 };
 
 export default ImageSlideshow;
-

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import ReactCrop, { makeAspectCrop, centerCrop } from 'react-image-crop';
 import type { Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -27,6 +28,22 @@ const ImageCropper = ({ imageFile, onCropComplete, onCancel, aspectRatio }: Imag
       reader.readAsDataURL(imageFile);
     }
   }, [imageFile]);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onCancel();
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [onCancel]);
 
   useEffect(() => {
     if (imgSrc && imgRef.current) {
@@ -145,12 +162,25 @@ const ImageCropper = ({ imageFile, onCropComplete, onCancel, aspectRatio }: Imag
 
   if (!imgSrc) return null;
 
-  return (
-    <div className="image-cropper-overlay">
+  return createPortal(
+    <div
+      className="image-cropper-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="image-cropper-title"
+    >
+      <button
+        type="button"
+        className="image-cropper-backdrop"
+        onClick={onCancel}
+        aria-label="Close crop dialog"
+      />
       <div className="image-cropper-modal">
         <div className="image-cropper-header">
-          <h3>Crop Image</h3>
-          <button className="image-cropper-close" onClick={onCancel}>×</button>
+          <h3 id="image-cropper-title">Crop Image</h3>
+          <button type="button" className="image-cropper-close" onClick={onCancel} aria-label="Close">
+            ×
+          </button>
         </div>
         <div className="image-cropper-content">
           <ReactCrop
@@ -174,15 +204,16 @@ const ImageCropper = ({ imageFile, onCropComplete, onCancel, aspectRatio }: Imag
           />
         </div>
         <div className="image-cropper-actions">
-          <button className="image-cropper-btn-cancel" onClick={onCancel}>
+          <button type="button" className="image-cropper-btn-cancel" onClick={onCancel}>
             Cancel
           </button>
-          <button className="image-cropper-btn-apply" onClick={handleCropComplete}>
+          <button type="button" className="image-cropper-btn-apply" onClick={handleCropComplete}>
             Apply Crop
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

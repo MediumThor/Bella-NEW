@@ -1,0 +1,62 @@
+/* Bella Stone premium design tokens */
+:root {
+  color-scheme: dark;
+
+  /* Brand palette */
+  --bs-black: #0a0a0b;
+  --bs-black-elevated: #121214;
+  --bs-surface: #1a1a1c;
+  --bs-surface-2: #222226;
+  --bs-border: rgba(255, 255, 255, 0.09);
+  --bs-border-strong: rgba(255, 255, 255, 0.14);
+  --bs-cream: #f4f1ea;
+  --bs-cream-muted: #a8a29a;
+  --bs-gold: #c9a227;
+  --bs-gold-soft: #d4af37;
+  --bs-gold-dim: #8a7020;
+  --bs-gold-tint: rgba(201, 162, 39, 0.14);
+  --bs-focus: #e8d48b;
+
+  /* Typography */
+  --bs-font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Helvetica Neue", system-ui, sans-serif;
+  --bs-font-display: "Bebas Neue", var(--bs-font-ui);
+  --bs-font-script: "Great Vibes", cursive;
+
+  /* Radius */
+  --bs-radius-sm: 6px;
+  --bs-radius-md: 10px;
+  --bs-radius-lg: 20px;
+  --bs-radius-xl: 26px;
+  --bs-radius-pill: 999px;
+
+  /* Glass */
+  --bs-glass-bg: rgba(18, 18, 20, 0.72);
+  --bs-glass-bg-elevated: rgba(24, 24, 27, 0.88);
+  --bs-glass-bg-solid: rgba(12, 12, 16, 0.92);
+  --bs-glass-blur: 18px;
+  --bs-glass-blur-strong: 28px;
+  --bs-glass-border: rgba(255, 255, 255, 0.09);
+  --bs-glass-border-top: rgba(255, 255, 255, 0.14);
+  --bs-glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  /* Shadows */
+  --bs-shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.35);
+  --bs-shadow-panel: 0 8px 40px rgba(0, 0, 0, 0.42),
+    0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  --bs-shadow-float: 0 20px 56px rgba(0, 0, 0, 0.5);
+
+  /* Motion */
+  --bs-motion-fast: 0.14s;
+  --bs-motion-base: 0.22s;
+  --bs-motion-slow: 0.32s;
+  --bs-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --bs-ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  --bs-spring-stiffness: 320;
+  --bs-spring-damping: 32;
+
+  /* Layout — synced from fixed nav via Navigation.tsx */
+  --bs-nav-height: 76px;
+  /* Gap from viewport top to hero (matches Home parallax-hero) */
+  --bs-hero-top-offset: 110px;
+}

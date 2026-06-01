@@ -2,7 +2,6 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import { getAnalytics } from 'firebase/analytics';
 
 // Firebase configuration for Bella Stone project
 const firebaseConfig = {
@@ -36,12 +35,21 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
-// Initialize Analytics (only in browser environment)
-let analytics;
-if (typeof window !== 'undefined') {
-  analytics = getAnalytics(app);
-}
-export { analytics };
+// Defer Analytics so it does not block first paint
+export const initFirebaseAnalytics = () => {
+  if (typeof window === 'undefined' || !firebaseConfig.measurementId) return;
+
+  const schedule =
+    'requestIdleCallback' in window
+      ? (cb: () => void) => window.requestIdleCallback(cb, { timeout: 4000 })
+      : (cb: () => void) => window.setTimeout(cb, 2000);
+
+  schedule(() => {
+    void import('firebase/analytics').then(({ getAnalytics }) => {
+      getAnalytics(app);
+    });
+  });
+};
 
 export default app;
 

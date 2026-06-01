@@ -10,6 +10,7 @@ export default defineConfig({
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
+          'motion-vendor': ['motion/react'],
           'ui-vendor': ['react-icons', 'react-image-crop'],
         },
       },

@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /charter-form/
+Disallow: /job-checklist
+Disallow: /measurement
+
+Sitemap: https://www.bellastone.net/sitemap.xml

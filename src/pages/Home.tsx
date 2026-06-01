@@ -1,262 +1,177 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import ImageSlideshow from '../components/ImageSlideshow';
-import ContactForm from '../components/ContactForm';
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
-import { db } from '../config/firebase';
-import { FaFacebook, FaInstagram, FaPhone, FaEnvelope } from 'react-icons/fa';
+import { motion, useReducedMotion } from 'motion/react';
+import Footer from '../components/Footer';
+import { openQuoteInquiryWidget } from '../utils/openQuoteInquiryWidget';
 import './Home.css';
-
-// Local homepage hero image
-const HOMEPAGE_HERO_IMAGE = '/homepage.jpeg';
 
 interface HomeSlide {
   id: string;
   url: string;
   name: string;
-  createdAt: any;
+  createdAt: unknown;
 }
 
+const revealVariants = {
+  hidden: { opacity: 0, y: 28 },
+  visible: { opacity: 1, y: 0 },
+};
+
 const Home = () => {
-  const [homeSlides, setHomeSlides] = useState<string[]>([]);
-  const [loadingHomeSlides, setLoadingHomeSlides] = useState(true);
-  const sectionsRef = useRef<(HTMLElement | null)[]>([]);
-  const observerRef = useRef<IntersectionObserver | null>(null);
+  const [homeSlides, setHomeSlides] = useState<string[]>([
+    '/2.webp',
+    '/3.webp',
+    '/6.webp',
+    '/7.webp',
+    '/8.webp',
+    '/9.webp',
+    '/10.webp',
+    '/11.webp',
+    '/12.webp',
+    '/13.webp',
+  ]);
+  const reduceMotion = useReducedMotion();
+
+  const revealTransition = reduceMotion
+    ? { duration: 0 }
+    : { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const };
 
   useEffect(() => {
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-          } else {
-            entry.target.classList.remove('visible');
-          }
-        });
-      },
-      { threshold: 0.5 }
-    );
-
-    return () => {
-      if (observerRef.current) {
-        sectionsRef.current.forEach((section) => {
-          if (section) observerRef.current?.unobserve(section);
-        });
-      }
-    };
-  }, []);
-
-  const addToRefs = (el: HTMLElement | null) => {
-    if (el && !sectionsRef.current.includes(el)) {
-      sectionsRef.current.push(el);
-      if (observerRef.current) {
-        observerRef.current.observe(el);
-      }
-    }
-  };
-
-  useEffect(() => {
-    // Parallax scroll effect
-    const handleScroll = () => {
-      const scrolled = window.pageYOffset;
-      const parallaxElements = document.querySelectorAll('.parallax');
-      parallaxElements.forEach((element) => {
-        const speed = element.getAttribute('data-speed') || '0.5';
-        const yPos = -(scrolled * parseFloat(speed));
-        (element as HTMLElement).style.transform = `translateY(${yPos}px)`;
-      });
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  useEffect(() => {
-    // Set fallback images immediately for fast initial load
-    const fallbackImages = [
-      '/2.webp',
-      '/3.webp',
-      '/6.webp',
-      '/7.webp',
-      '/8.webp',
-      '/9.webp',
-      '/10.webp',
-      '/11.webp',
-      '/12.webp',
-      '/13.webp',
-    ];
-    setHomeSlides(fallbackImages);
-    setLoadingHomeSlides(false);
-
-    // Fetch Firebase images in the background after page load
     const fetchHomeSlides = async () => {
       try {
+        const [{ collection, getDocs, orderBy, query }, { db }] = await Promise.all([
+          import('firebase/firestore'),
+          import('../config/firebase'),
+        ]);
         const slidesRef = collection(db, 'homeSlideshowImages');
         const slidesQuery = query(slidesRef, orderBy('createdAt', 'desc'));
         const snapshot = await getDocs(slidesQuery);
-        const fetched = snapshot.docs.map(doc => (doc.data() as HomeSlide).url).filter(Boolean);
+        const fetched = snapshot.docs
+          .map((doc) => (doc.data() as HomeSlide).url)
+          .filter(Boolean);
 
         if (fetched.length > 0) {
           setHomeSlides(fetched);
         }
       } catch (error) {
         console.error('Error fetching home slideshow images:', error);
-        // Keep fallback images on error
       }
     };
 
-    // Delay Firebase fetch to allow page to render first
-    const timeoutId = setTimeout(() => {
-      fetchHomeSlides();
-    }, 100);
+    let idleId: number | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
-    return () => clearTimeout(timeoutId);
+    const runFetch = () => {
+      void fetchHomeSlides();
+    };
+
+    if ('requestIdleCallback' in window) {
+      idleId = window.requestIdleCallback(runFetch, { timeout: 3000 });
+    } else {
+      timeoutId = setTimeout(runFetch, 800);
+    }
+
+    return () => {
+      if (idleId !== undefined) window.cancelIdleCallback(idleId);
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrolled = window.pageYOffset;
+      document.querySelectorAll('.parallax').forEach((element) => {
+        const speed = element.getAttribute('data-speed') || '0.5';
+        const yPos = -(scrolled * parseFloat(speed));
+        (element as HTMLElement).style.transform = `translateY(${yPos}px)`;
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
-    <div className="home-page">
-      {/* Parallax Hero Section */}
+    <div className="home-page bs-page-bg">
       <section className="parallax-hero">
-          <div 
-          className="parallax-hero-image parallax"
-            data-speed="0.2"
-            style={{
-            backgroundImage: `url(${HOMEPAGE_HERO_IMAGE})`
-            }}
-          >
+        <motion.div
+          className="parallax-hero-image parallax glass-panel"
+          data-speed="0.2"
+          initial={reduceMotion ? false : { opacity: 0, scale: 1.04 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        >
           <div className="parallax-hero-overlay">
-            <h1 className="parallax-hero-title">Bella Stone</h1>
-            <p className="parallax-hero-slogan">Where Elegance Meets Excellence</p>
+            <motion.h1
+              className="parallax-hero-title"
+              initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...revealTransition, delay: 0.15 }}
+            >
+              Bella Stone
+            </motion.h1>
+            <motion.p
+              className="parallax-hero-slogan"
+              initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...revealTransition, delay: 0.3 }}
+            >
+              Where Elegance Meets Excellence
+            </motion.p>
+            <motion.p
+              className="parallax-hero-location"
+              initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ ...revealTransition, delay: 0.42 }}
+            >
+              Fredonia, WI
+            </motion.p>
           </div>
-                </div>
+        </motion.div>
       </section>
 
-      {/* Quality Saying Section */}
-      <section className="quality-saying-section" ref={addToRefs}>
-        <div className="quality-saying-content">
-          <p className="quality-saying-text">
-            Quality countertops crafted with the most modern methods, combining timeless elegance 
-            with cutting-edge precision. At Bella Stone, we transform your vision into reality 
-            through innovative fabrication techniques and meticulous attention to detail. Since 2008.
-                </p>
-          
-          {/* Contact Us Button */}
+      <motion.section
+        className="quality-saying-section"
+        variants={revealVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.35 }}
+        transition={revealTransition}
+      >
+        <div className="quality-saying-content glass-panel">
+          <p className="quality-saying-text bs-body-text">
+            Quality granite, quartz, and stone countertops crafted with the most modern methods,
+            combining timeless elegance with cutting-edge precision. At Bella Stone, we transform your
+            vision into reality through innovative fabrication techniques and meticulous attention to
+            detail. Serving Milwaukee, Ozaukee County, Mequon, Port Washington, and nearby Wisconsin
+            communities since 2008.
+          </p>
           <div className="contact-us-button-container">
-                  <button
-              className="contact-us-button"
-                    onClick={() => {
-                document.getElementById('inquiry-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }}
-                  >
+            <button
+              className="glass-button contact-us-button"
+              type="button"
+              onClick={() => openQuoteInquiryWidget()}
+            >
               Contact Us
-                  </button>
+            </button>
           </div>
         </div>
-      </section>
+      </motion.section>
 
-      {/* Slideshow Section */}
-      <section className="slideshow-section" ref={addToRefs}>
+      <motion.section
+        className="slideshow-section"
+        variants={revealVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ ...revealTransition, delay: 0.05 }}
+      >
         <div className="home-slideshow-wrapper">
-          {loadingHomeSlides ? (
-            <div className="loading">Loading gallery...</div>
-          ) : (
-            <ImageSlideshow images={homeSlides} title="Gallery" />
-          )}
+          <ImageSlideshow images={homeSlides} />
         </div>
-      </section> 
+      </motion.section>
 
-      {/* Our Process Section */}
-      <section className="process-section" ref={addToRefs}>
-        <div className="process-container">
-          <h2 className="process-title">Our Process</h2>
-          <div className="process-content">
-            <div className="process-item">
-              <h3>Design Consultation</h3>
-            <p>
-                Collaborate with our experts to find the perfect stone solution that aligns 
-                with your vision and space requirements.
-              </p>
-            </div>
-            <div className="process-item">
-              <h3>Precision Measuring</h3>
-              <p>
-                Our state-of-the-art laser measuring technology ensures a perfect fit for 
-                your countertops.
-            </p>
-            </div>
-            <div className="process-item">
-              <h3>Slab Selection & Grain Matching</h3>
-              <p>
-                Using our <strong>Horus slab scanner</strong> and <strong>Sasso K-600 miter saw</strong>, 
-                we ensure all slabs are properly grain matched. This advanced technology allows us 
-                to create seamless patterns and perfect alignment across multiple pieces.
-              </p>
-          </div>
-            <div className="process-item">
-              <h3>CNC Fabrication</h3>
-            <p>
-                Leveraging advanced CNC machinery, we guarantee intricate designs and 
-                superior finish quality for every countertop.
-            </p>
-          </div>
-            <div className="process-item">
-              <h3>Professional Installation</h3>
-            <p>
-                Expert installation by our skilled team ensures your countertops are 
-                perfectly placed and finished.
-            </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Inquiry Form Section */}
-      <section id="inquiry-form" className="inquiry-form-section" ref={addToRefs}>
-        <div className="inquiry-form-container">
-          <h2 className="inquiry-form-title">Get In Touch</h2>
-          <div className="contact-info-links">
-            <a href="tel:+1-414-617-8078" className="contact-info-link">
-              <FaPhone size="1.5rem" />
-              <span>414-617-8078</span>
-            </a>
-            <a href="mailto:bellastone@live.com" className="contact-info-link">
-              <FaEnvelope size="1.5rem" />
-              <span>bellastone@live.com</span>
-            </a>
-          </div>
-          <ContactForm />
-        </div>
-      </section>
-
-      <footer className="footer-landing">
-        <div className="footer-content-landing">
-          <a 
-            href="https://www.google.com/maps/place/Bella+Stone,+LLc/@43.4641412,-87.9532781,14.4z/data=!4m6!3m5!1s0x8804ecb6d0b3058f:0x75c35b6057b78256!8m2!3d43.4583816!4d-87.948204!16s%2Fg%2F1vbnpzy2?entry=ttu" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="maps-button"
-          >
-            <img src="/BellaMap.png" alt="Location" style={{ width: '250px', height: '250px', borderRadius: '7px' }} />
-          </a>
-
-          <div className="contact-grid-footer">
-            <a href="https://www.facebook.com/BellaStoneLLC/" target="_blank" rel="noopener noreferrer" className="social-button-top">
-              <FaFacebook size="2rem" />
-            </a>
-            <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" className="social-button-top">
-              <FaInstagram size="2rem" />
-            </a>
-            <a href="tel:+1-414-617-8078" className="social-button-top">
-              <FaPhone size="2rem" />
-            </a>
-            <a href="mailto:bellastone@live.com" className="social-button-top">
-              <FaEnvelope size="2rem" />
-            </a>
-          </div>
-        </div>
-        <div className="footer-copyright">
-          <p>Copyright Bella Stone LLC 2026</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

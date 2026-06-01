@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { loadGoogleMaps } from '../utils/loadGoogleMaps';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, getDoc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -199,15 +200,22 @@ const CharterFormEditor = () => {
     }
   }, [id, inquiryId, isEditing]);
 
-  // Initialize Google Places Autocomplete for address and location fields
+  // Initialize Google Places Autocomplete (maps loaded on demand)
   useEffect(() => {
-    if (typeof window !== 'undefined' && (window as any).google) {
-      // Initialize address autocomplete
+    if (loading) return;
+
+    let cancelled = false;
+
+    void loadGoogleMaps().then(() => {
+      if (cancelled || !(window as Window & { google?: { maps?: { places?: unknown } } }).google?.maps) {
+        return;
+      }
+
       const addressInput = document.getElementById('address-input') as HTMLInputElement;
       if (addressInput) {
         const addressAutocomplete = new (window as any).google.maps.places.Autocomplete(addressInput, {
           types: ['address'],
-          componentRestrictions: { country: ['us', 'vg', 'vi'] } // US, British Virgin Islands, US Virgin Islands
+          componentRestrictions: { country: ['us', 'vg', 'vi'] },
         });
         addressAutocomplete.addListener('place_changed', () => {
           const place = addressAutocomplete.getPlace();
@@ -217,12 +225,11 @@ const CharterFormEditor = () => {
         });
       }
 
-      // Initialize location autocomplete
       const locationInput = document.getElementById('location-input') as HTMLInputElement;
       if (locationInput) {
         const locationAutocomplete = new (window as any).google.maps.places.Autocomplete(locationInput, {
           types: ['establishment', 'geocode'],
-          componentRestrictions: { country: ['us', 'vg', 'vi'] }
+          componentRestrictions: { country: ['us', 'vg', 'vi'] },
         });
         locationAutocomplete.addListener('place_changed', () => {
           const place = locationAutocomplete.getPlace();
@@ -233,7 +240,11 @@ const CharterFormEditor = () => {
           }
         });
       }
-    }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [loading]);
 
   useEffect(() => {

@@ -1,20 +1,30 @@
 .image-cropper-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.8);
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10000;
+  padding: 1rem;
+}
+
+.image-cropper-backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(var(--bs-glass-blur-strong));
+  -webkit-backdrop-filter: blur(var(--bs-glass-blur-strong));
+  cursor: pointer;
 }
 
 .image-cropper-modal {
-  background-color: #1a1a1a;
-  border-radius: 12px;
-  border: 1px solid #333;
+  position: relative;
+  z-index: 1;
+  background: var(--bs-glass-bg-solid);
+  border-radius: var(--bs-radius-xl);
+  border: 1px solid var(--bs-glass-border-top);
   max-width: 90vw;
   max-height: 90vh;
   display: flex;
@@ -31,7 +41,7 @@
 }
 
 .image-cropper-header h3 {
-  color: #EADAB6;
+  color: var(--bs-cream);
   margin: 0;
   font-size: 1.5rem;
   font-weight: 600;
@@ -100,12 +110,12 @@
 }
 
 .image-cropper-btn-apply {
-  background-color: #EADAB6;
-  color: #000;
+  background: linear-gradient(135deg, var(--bs-gold-soft), var(--bs-gold));
+  color: var(--bs-black);
 }
 
 .image-cropper-btn-apply:hover {
-  background-color: #FFBFA9;
+  filter: brightness(1.08);
 }
 
 @media (max-width: 768px) {

@@ -4,6 +4,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import ImageCropper from './ImageCropper';
+import ImageUploadZone from './ImageUploadZone';
 import './ImageLibrary.css';
 
 interface SlideshowImage {
@@ -730,24 +731,33 @@ const ImageLibrary = () => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const focusProcessUploadForm = (stepId: string) => {
+    setSelectedProcessStep(stepId);
+    document.getElementById('processImageName')?.focus();
+    document.getElementById('section-process-images')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  };
+
   return (
     <div className="image-library">
-      <div className="section-header">
+      <div className="admin-section-header">
         <h2>Image Library</h2>
-        <p className="section-description">
+        <p className="admin-section-desc">
           Add and manage images for your website. Copy URLs to use in blog posts or page content.
         </p>
       </div>
 
-      <div id="section-homepage-slideshow" className="section-header" style={{ marginTop: '3rem' }}>
+      <div id="section-homepage-slideshow" className="admin-section-header image-library__section">
         <h2>Home Page Slideshow Images</h2>
-        <p className="section-description">
+        <p className="admin-section-desc">
           Manage the images used in the Home page slideshow gallery. These are separate from the Charters gallery.
         </p>
       </div>
 
-      <form onSubmit={handleHomeSlideUpload} className="upload-form">
-        <div className="form-group">
+      <form onSubmit={handleHomeSlideUpload} className="admin-form">
+        <div className="admin-form-group">
           <label htmlFor="homeSlideName">Home Slideshow Image Name</label>
           <input
             type="text"
@@ -758,8 +768,8 @@ const ImageLibrary = () => {
             required
           />
         </div>
-        <div className="form-group">
-          <label htmlFor="homeSlideUrl">Home Slideshow Image URL (or upload file below)</label>
+        <div className="admin-form-group">
+          <label htmlFor="homeSlideUrl">Image URL (optional)</label>
           <input
             type="url"
             id="homeSlideUrl"
@@ -768,45 +778,42 @@ const ImageLibrary = () => {
             placeholder="https://images.unsplash.com/..."
           />
         </div>
-        <div className="form-group">
-          <label htmlFor="home-slide-file">Or Upload Image File</label>
-          <input
-            type="file"
-            id="home-slide-file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0] || null;
-              if (file) {
-                handleFileSelect(file, (croppedFile) => {
-                  setNewHomeSlideFile(croppedFile);
-                  setNewHomeSlideUrl('');
-                });
-              }
-            }}
-          />
-          {newHomeSlideFile && <p style={{ fontSize: '0.85rem', color: '#EADAB6', marginTop: '0.25rem' }}>Selected: {newHomeSlideFile.name}</p>}
+        <ImageUploadZone
+          inputId="home-slide-file"
+          label="Upload or paste image"
+          selectedFile={newHomeSlideFile}
+          disabled={uploadingHomeSlide}
+          onFileSelect={(file) =>
+            handleFileSelect(file, (croppedFile) => {
+              setNewHomeSlideFile(croppedFile);
+              setNewHomeSlideUrl('');
+            })
+          }
+          onClear={() => setNewHomeSlideFile(null)}
+        />
+        <div className="admin-form-actions">
+          <button type="submit" className="admin-btn-primary" disabled={uploadingHomeSlide}>
+            {uploadingHomeSlide ? 'Adding...' : '+ Add Slideshow Image'}
+          </button>
         </div>
-        <button type="submit" className="btn-upload" disabled={uploadingHomeSlide}>
-          {uploadingHomeSlide ? 'Adding...' : '+ Add Home Slideshow Image'}
-        </button>
       </form>
 
       {loadingHomeSlides ? (
-        <div className="loading">Loading home slideshow images...</div>
+        <div className="admin-loading">Loading home slideshow images...</div>
       ) : homeSlides.length === 0 ? (
-        <div className="empty-state">
+        <div className="admin-empty-state">
           <p>No home slideshow images yet. Add your first home slideshow image!</p>
         </div>
       ) : (
-        <div className="images-grid">
+        <div className="admin-images-grid">
           {homeSlides.map(image => (
-            <div key={image.id} className="image-card">
-              <div className="image-preview">
+            <div key={image.id} className="admin-image-card">
+              <div className="admin-image-preview">
                 <img src={image.url} alt={image.name} />
               </div>
-              <div className="image-info">
+              <div className="admin-image-info">
                 <h3>{image.name}</h3>
-                <div className="image-url">
+                <div className="admin-image-url">
                   <input 
                     type="text" 
                     value={image.url} 
@@ -815,14 +822,14 @@ const ImageLibrary = () => {
                   />
                   <button 
                     onClick={() => copyToClipboard(image.url, image.id)}
-                    className="btn-copy"
+                    className="admin-btn-secondary"
                   >
                     {copiedId === image.id ? '✓ Copied' : 'Copy'}
                   </button>
                 </div>
                 <button 
                   onClick={() => handleDeleteHomeSlide(image.id)}
-                  className="btn-delete-img"
+                  className="admin-btn-danger"
                 >
                   Remove from Home Slideshow
                 </button>
@@ -832,15 +839,15 @@ const ImageLibrary = () => {
         </div>
       )}
 
-      <div id="section-homepage-image" className="section-header" style={{ marginTop: '3rem' }}>
+      <div id="section-homepage-image" className="admin-section-header image-library__section">
         <h2>Homepage Image</h2>
-        <p className="section-description">
+        <p className="admin-section-desc">
           Set the main hero image for the homepage. This is a single image displayed prominently on the home page.
         </p>
       </div>
 
-      <form onSubmit={handleSaveHomepageImage} className="upload-form">
-        <div className="form-group">
+      <form onSubmit={handleSaveHomepageImage} className="admin-form">
+        <div className="admin-form-group">
           <label htmlFor="homepageImageName">Image Name</label>
           <input
             type="text"
@@ -850,8 +857,8 @@ const ImageLibrary = () => {
             placeholder="e.g., Homepage Hero Image"
           />
         </div>
-        <div className="form-group" style={{ gridColumn: 'span 2' }}>
-          <label htmlFor="homepageImageUrl">Image URL (or upload file below)</label>
+        <div className="admin-form-group">
+          <label htmlFor="homepageImageUrl">Image URL (optional)</label>
           <input
             type="url"
             id="homepageImageUrl"
@@ -860,44 +867,41 @@ const ImageLibrary = () => {
             placeholder="https://example.com/homepage-hero.jpg"
           />
         </div>
-        <div className="form-group" style={{ gridColumn: 'span 2' }}>
-          <label htmlFor="homepage-image-file">Or Upload Image File</label>
-          <input
-            type="file"
-            id="homepage-image-file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0] || null;
-              if (file) {
-                handleFileSelect(file, (croppedFile) => {
-                  setHomepageImageFile(croppedFile);
-                  setHomepageImageUrl('');
-                });
-              }
-            }}
-          />
-          {homepageImageFile && <p style={{ fontSize: '0.85rem', color: '#EADAB6', marginTop: '0.25rem' }}>Selected: {homepageImageFile.name}</p>}
+        <ImageUploadZone
+          inputId="homepage-image-file"
+          label="Upload or paste image"
+          selectedFile={homepageImageFile}
+          disabled={savingHomepageImage}
+          onFileSelect={(file) =>
+            handleFileSelect(file, (croppedFile) => {
+              setHomepageImageFile(croppedFile);
+              setHomepageImageUrl('');
+            })
+          }
+          onClear={() => setHomepageImageFile(null)}
+        />
+        <div className="admin-form-actions">
+          <button type="submit" className="admin-btn-primary" disabled={savingHomepageImage}>
+            {savingHomepageImage ? 'Saving...' : 'Save Homepage Image'}
+          </button>
         </div>
-        <button type="submit" className="btn-upload" disabled={savingHomepageImage}>
-          {savingHomepageImage ? 'Saving...' : 'Save Homepage Image'}
-        </button>
       </form>
 
       {loadingHomepageImage ? (
-        <div className="loading">Loading homepage image...</div>
+        <div className="admin-loading">Loading homepage image...</div>
       ) : !homepageImage || !homepageImage.url ? (
-        <div className="empty-state">
+        <div className="admin-empty-state">
           <p>No homepage image set yet. Add a homepage image above.</p>
         </div>
       ) : (
-        <div className="images-grid">
-          <div className="image-card">
-              <div className="image-preview">
+        <div className="admin-images-grid">
+          <div className="admin-image-card">
+              <div className="admin-image-preview">
               <img src={homepageImage.url} alt={homepageImage.name || 'Homepage Image'} />
               </div>
-              <div className="image-info">
+              <div className="admin-image-info">
               <h3>{homepageImage.name || 'Homepage Image'}</h3>
-                <div className="image-url">
+                <div className="admin-image-url">
                   <input 
                     type="text" 
                   value={homepageImage.url} 
@@ -906,14 +910,14 @@ const ImageLibrary = () => {
                   />
                   <button 
                   onClick={() => copyToClipboard(homepageImage.url, 'homepage')}
-                    className="btn-copy"
+                    className="admin-btn-secondary"
                   >
                   {copiedId === 'homepage' ? '✓ Copied' : 'Copy'}
                   </button>
                 </div>
                 <button 
                 onClick={handleClearHomepageImage}
-                  className="btn-delete-img"
+                  className="admin-btn-danger"
                 >
                 Remove Homepage Image
                 </button>
@@ -922,15 +926,15 @@ const ImageLibrary = () => {
         </div>
       )}
 
-      <div id="section-process-images" className="section-header" style={{ marginTop: '3rem' }}>
+      <div id="section-process-images" className="admin-section-header image-library__section">
         <h2>Our Process Images</h2>
-        <p className="section-description">
+        <p className="admin-section-desc">
           Upload and manage images for each step of the Bella Stone process. These images appear on the "Our Process" page when users hover over the timeline items.
         </p>
       </div>
 
-      <form onSubmit={handleProcessImageUpload} className="upload-form">
-        <div className="form-group">
+      <form onSubmit={handleProcessImageUpload} className="admin-form">
+        <div className="admin-form-group">
           <label htmlFor="processImageName">Image Name</label>
           <input
             type="text"
@@ -941,8 +945,8 @@ const ImageLibrary = () => {
             required
           />
         </div>
-        <div className="form-group">
-          <label htmlFor="processImageUrl">Image URL (or upload file below)</label>
+        <div className="admin-form-group">
+          <label htmlFor="processImageUrl">Image URL (optional)</label>
           <input
             type="url"
             id="processImageUrl"
@@ -951,25 +955,20 @@ const ImageLibrary = () => {
             placeholder="https://example.com/image.jpg"
           />
         </div>
-        <div className="form-group">
-          <label htmlFor="process-image-file">Or Upload Image File</label>
-          <input
-            type="file"
-            id="process-image-file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0] || null;
-              if (file) {
-                handleFileSelect(file, (croppedFile) => {
-                  setNewProcessImageFile(croppedFile);
-                  setNewProcessImageUrl('');
-                });
-              }
-            }}
-          />
-          {newProcessImageFile && <p style={{ fontSize: '0.85rem', color: '#EADAB6', marginTop: '0.25rem' }}>Selected: {newProcessImageFile.name}</p>}
-        </div>
-        <div className="form-group">
+        <ImageUploadZone
+          inputId="process-image-file"
+          label="Upload or paste image"
+          selectedFile={newProcessImageFile}
+          disabled={uploadingProcessImage}
+          onFileSelect={(file) =>
+            handleFileSelect(file, (croppedFile) => {
+              setNewProcessImageFile(croppedFile);
+              setNewProcessImageUrl('');
+            })
+          }
+          onClear={() => setNewProcessImageFile(null)}
+        />
+        <div className="admin-form-group">
           <label htmlFor="processStep">Process Step</label>
           <select
             id="processStep"
@@ -982,73 +981,83 @@ const ImageLibrary = () => {
             ))}
           </select>
         </div>
-        <button type="submit" className="btn-upload" disabled={uploadingProcessImage}>
-          {uploadingProcessImage ? 'Uploading...' : 'Add Process Image'}
-        </button>
+        <div className="admin-form-actions">
+          <button type="submit" className="admin-btn-primary" disabled={uploadingProcessImage}>
+            {uploadingProcessImage ? 'Uploading...' : 'Add Process Image'}
+          </button>
+        </div>
       </form>
 
       {loadingProcessImages ? (
-        <div className="loading">Loading process images...</div>
-      ) : processImages.length === 0 ? (
-        <div className="empty-state">
-          <p>No process images yet. Upload your first process image above.</p>
-        </div>
+        <div className="admin-loading">Loading process images...</div>
       ) : (
         <div className="process-images-container">
-          {PROCESS_STEPS.map(step => {
-            const stepImages = processImages.filter(img => img.processStep === step.id);
-            if (stepImages.length === 0) return null;
-            
+          {PROCESS_STEPS.map((step) => {
+            const stepImages = processImages.filter((img) => img.processStep === step.id);
+
             return (
-              <div key={step.id} className="process-step-group" style={{ marginTop: '2rem' }}>
-                <h3 className="step-group-title">{step.label}</h3>
-        <div className="images-grid">
-                  {stepImages.map(image => (
-            <div key={image.id} className="image-card">
-              <div className="image-preview">
-                <img src={image.url} alt={image.name} />
-              </div>
-              <div className="image-info">
-                        <h4>{image.name}</h4>
-                <div className="image-url">
-                  <input
-                    type="text"
-                    value={image.url}
-                    readOnly
-                    onClick={(e) => (e.target as HTMLInputElement).select()}
-                  />
-                  <button
-                    onClick={() => copyToClipboard(image.url, image.id)}
-                    className="btn-copy"
-                  >
-                    {copiedId === image.id ? '✓ Copied' : 'Copy'}
-                  </button>
-                </div>
-                <button
-                          onClick={() => handleDeleteProcessImage(image.id)}
-                  className="btn-delete-img"
-                >
-                          Delete Image
-                </button>
-              </div>
-            </div>
-          ))}
-                </div>
+              <div key={step.id} className="image-library__step-group">
+                <h3 className="admin-step-group-title">{step.label}</h3>
+                {stepImages.length === 0 ? (
+                  <div className="admin-step-empty">
+                    <p>No image set for this step yet.</p>
+                    <button
+                      type="button"
+                      className="admin-btn-secondary"
+                      onClick={() => focusProcessUploadForm(step.id)}
+                    >
+                      Add image for this step
+                    </button>
+                  </div>
+                ) : (
+                  <div className="admin-images-grid">
+                    {stepImages.map((image) => (
+                      <div key={image.id} className="admin-image-card">
+                        <div className="admin-image-preview">
+                          <img src={image.url} alt={image.name} />
+                        </div>
+                        <div className="admin-image-info">
+                          <h4>{image.name}</h4>
+                          <div className="admin-image-url">
+                            <input
+                              type="text"
+                              value={image.url}
+                              readOnly
+                              onClick={(e) => (e.target as HTMLInputElement).select()}
+                            />
+                            <button
+                              onClick={() => copyToClipboard(image.url, image.id)}
+                              className="admin-btn-secondary"
+                            >
+                              {copiedId === image.id ? '✓ Copied' : 'Copy'}
+                            </button>
+                          </div>
+                          <button
+                            onClick={() => handleDeleteProcessImage(image.id)}
+                            className="admin-btn-danger"
+                          >
+                            Delete Image
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       )}
 
-      <div id="section-horus" className="section-header" style={{ marginTop: '3rem' }}>
+      <div id="section-horus" className="admin-section-header image-library__section">
         <h2>Horus Slab Scanner Image</h2>
-        <p className="section-description">
+        <p className="admin-section-desc">
           Set the image that appears when users hover over the Horus Slab Scanner card on the "Our Process" page.
         </p>
       </div>
 
-      <form onSubmit={handleSaveHorusImage} className="upload-form">
-        <div className="form-group">
+      <form onSubmit={handleSaveHorusImage} className="admin-form">
+        <div className="admin-form-group">
           <label htmlFor="horusImageName">Image Name</label>
           <input
             type="text"
@@ -1058,8 +1067,8 @@ const ImageLibrary = () => {
             placeholder="e.g., Horus Slab Scanner"
           />
         </div>
-        <div className="form-group" style={{ gridColumn: 'span 2' }}>
-          <label htmlFor="horusImageUrl">Image URL (or upload file below)</label>
+        <div className="admin-form-group">
+          <label htmlFor="horusImageUrl">Image URL (optional)</label>
           <input
             type="url"
             id="horusImageUrl"
@@ -1068,44 +1077,41 @@ const ImageLibrary = () => {
             placeholder="https://example.com/horus-scanner.jpg"
           />
         </div>
-        <div className="form-group" style={{ gridColumn: 'span 2' }}>
-          <label htmlFor="horus-image-file">Or Upload Image File</label>
-          <input
-            type="file"
-            id="horus-image-file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0] || null;
-              if (file) {
-                handleFileSelect(file, (croppedFile) => {
-                  setHorusImageFile(croppedFile);
-                  setHorusImageUrl('');
-                });
-              }
-            }}
-          />
-          {horusImageFile && <p style={{ fontSize: '0.85rem', color: '#EADAB6', marginTop: '0.25rem' }}>Selected: {horusImageFile.name}</p>}
+        <ImageUploadZone
+          inputId="horus-image-file"
+          label="Upload or paste image"
+          selectedFile={horusImageFile}
+          disabled={savingHorusImage}
+          onFileSelect={(file) =>
+            handleFileSelect(file, (croppedFile) => {
+              setHorusImageFile(croppedFile);
+              setHorusImageUrl('');
+            })
+          }
+          onClear={() => setHorusImageFile(null)}
+        />
+        <div className="admin-form-actions">
+          <button type="submit" className="admin-btn-primary" disabled={savingHorusImage}>
+            {savingHorusImage ? 'Saving...' : 'Save Horus Image'}
+          </button>
         </div>
-        <button type="submit" className="btn-upload" disabled={savingHorusImage}>
-          {savingHorusImage ? 'Saving...' : 'Save Horus Image'}
-        </button>
       </form>
 
       {loadingHorusImage ? (
-        <div className="loading">Loading Horus image...</div>
+        <div className="admin-loading">Loading Horus image...</div>
       ) : !horusImage || !horusImage.url ? (
-        <div className="empty-state">
+        <div className="admin-empty-state">
           <p>No Horus image set yet. Add a Horus image above.</p>
         </div>
       ) : (
-        <div className="images-grid">
-          <div className="image-card">
-            <div className="image-preview">
+        <div className="admin-images-grid">
+          <div className="admin-image-card">
+            <div className="admin-image-preview">
               <img src={horusImage.url} alt={horusImage.name || 'Horus Slab Scanner'} />
             </div>
-            <div className="image-info">
+            <div className="admin-image-info">
               <h3>{horusImage.name || 'Horus Slab Scanner'}</h3>
-              <div className="image-url">
+              <div className="admin-image-url">
                 <input 
                   type="text" 
                   value={horusImage.url} 
@@ -1114,14 +1120,14 @@ const ImageLibrary = () => {
                 />
                 <button 
                   onClick={() => copyToClipboard(horusImage.url, 'horus')}
-                  className="btn-copy"
+                  className="admin-btn-secondary"
                 >
                   {copiedId === 'horus' ? '✓ Copied' : 'Copy'}
                 </button>
               </div>
               <button 
                 onClick={handleClearHorusImage}
-                className="btn-delete-img"
+                className="admin-btn-danger"
               >
                 Remove Horus Image
               </button>
@@ -1130,15 +1136,15 @@ const ImageLibrary = () => {
         </div>
       )}
 
-      <div id="section-sasso" className="section-header" style={{ marginTop: '3rem' }}>
+      <div id="section-sasso" className="admin-section-header image-library__section">
         <h2>Sasso K-600 Miter Saw Image</h2>
-        <p className="section-description">
+        <p className="admin-section-desc">
           Set the image that appears when users hover over the Sasso K-600 Miter Saw card on the "Our Process" page.
         </p>
       </div>
 
-      <form onSubmit={handleSaveSassoImage} className="upload-form">
-        <div className="form-group">
+      <form onSubmit={handleSaveSassoImage} className="admin-form">
+        <div className="admin-form-group">
           <label htmlFor="sassoImageName">Image Name</label>
           <input
             type="text"
@@ -1148,8 +1154,8 @@ const ImageLibrary = () => {
             placeholder="e.g., Sasso K-600 Miter Saw"
           />
         </div>
-        <div className="form-group" style={{ gridColumn: 'span 2' }}>
-          <label htmlFor="sassoImageUrl">Image URL (or upload file below)</label>
+        <div className="admin-form-group">
+          <label htmlFor="sassoImageUrl">Image URL (optional)</label>
           <input
             type="url"
             id="sassoImageUrl"
@@ -1158,44 +1164,41 @@ const ImageLibrary = () => {
             placeholder="https://example.com/sasso-saw.jpg"
           />
         </div>
-        <div className="form-group" style={{ gridColumn: 'span 2' }}>
-          <label htmlFor="sasso-image-file">Or Upload Image File</label>
-          <input
-            type="file"
-            id="sasso-image-file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0] || null;
-              if (file) {
-                handleFileSelect(file, (croppedFile) => {
-                  setSassoImageFile(croppedFile);
-                  setSassoImageUrl('');
-                });
-              }
-            }}
-          />
-          {sassoImageFile && <p style={{ fontSize: '0.85rem', color: '#EADAB6', marginTop: '0.25rem' }}>Selected: {sassoImageFile.name}</p>}
+        <ImageUploadZone
+          inputId="sasso-image-file"
+          label="Upload or paste image"
+          selectedFile={sassoImageFile}
+          disabled={savingSassoImage}
+          onFileSelect={(file) =>
+            handleFileSelect(file, (croppedFile) => {
+              setSassoImageFile(croppedFile);
+              setSassoImageUrl('');
+            })
+          }
+          onClear={() => setSassoImageFile(null)}
+        />
+        <div className="admin-form-actions">
+          <button type="submit" className="admin-btn-primary" disabled={savingSassoImage}>
+            {savingSassoImage ? 'Saving...' : 'Save Sasso Image'}
+          </button>
         </div>
-        <button type="submit" className="btn-upload" disabled={savingSassoImage}>
-          {savingSassoImage ? 'Saving...' : 'Save Sasso Image'}
-        </button>
       </form>
 
       {loadingSassoImage ? (
-        <div className="loading">Loading Sasso image...</div>
+        <div className="admin-loading">Loading Sasso image...</div>
       ) : !sassoImage || !sassoImage.url ? (
-        <div className="empty-state">
+        <div className="admin-empty-state">
           <p>No Sasso image set yet. Add a Sasso image above.</p>
         </div>
       ) : (
-        <div className="images-grid">
-          <div className="image-card">
-            <div className="image-preview">
+        <div className="admin-images-grid">
+          <div className="admin-image-card">
+            <div className="admin-image-preview">
               <img src={sassoImage.url} alt={sassoImage.name || 'Sasso K-600 Miter Saw'} />
             </div>
-            <div className="image-info">
+            <div className="admin-image-info">
               <h3>{sassoImage.name || 'Sasso K-600 Miter Saw'}</h3>
-              <div className="image-url">
+              <div className="admin-image-url">
                 <input 
                   type="text" 
                   value={sassoImage.url} 
@@ -1204,14 +1207,14 @@ const ImageLibrary = () => {
                 />
                 <button 
                   onClick={() => copyToClipboard(sassoImage.url, 'sasso')}
-                  className="btn-copy"
+                  className="admin-btn-secondary"
                 >
                   {copiedId === 'sasso' ? '✓ Copied' : 'Copy'}
                 </button>
               </div>
               <button 
                 onClick={handleClearSassoImage}
-                className="btn-delete-img"
+                className="admin-btn-danger"
               >
                 Remove Sasso Image
               </button>
@@ -1220,15 +1223,15 @@ const ImageLibrary = () => {
         </div>
       )}
 
-      <div id="section-inventory" className="section-header" style={{ marginTop: '3rem' }}>
+      <div id="section-inventory" className="admin-section-header image-library__section">
         <h2>Inventory Page Image</h2>
-        <p className="section-description">
+        <p className="admin-section-desc">
           Set the image that appears on the Inventory page. This image will be displayed with the "View Full Inventory" button overlay.
         </p>
       </div>
 
-      <form onSubmit={handleSaveInventoryImage} className="upload-form">
-        <div className="form-group">
+      <form onSubmit={handleSaveInventoryImage} className="admin-form">
+        <div className="admin-form-group">
           <label htmlFor="inventoryImageName">Image Name</label>
           <input
             type="text"
@@ -1238,8 +1241,8 @@ const ImageLibrary = () => {
             placeholder="e.g., Stone Inventory Display"
           />
         </div>
-        <div className="form-group" style={{ gridColumn: 'span 2' }}>
-          <label htmlFor="inventoryImageUrl">Image URL (or upload file below)</label>
+        <div className="admin-form-group">
+          <label htmlFor="inventoryImageUrl">Image URL (optional)</label>
           <input
             type="url"
             id="inventoryImageUrl"
@@ -1248,44 +1251,41 @@ const ImageLibrary = () => {
             placeholder="https://example.com/inventory-image.jpg"
           />
         </div>
-        <div className="form-group" style={{ gridColumn: 'span 2' }}>
-          <label htmlFor="inventory-image-file">Or Upload Image File</label>
-          <input
-            type="file"
-            id="inventory-image-file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0] || null;
-              if (file) {
-                handleFileSelect(file, (croppedFile) => {
-                  setInventoryImageFile(croppedFile);
-                  setInventoryImageUrl('');
-                });
-              }
-            }}
-          />
-          {inventoryImageFile && <p style={{ fontSize: '0.85rem', color: '#EADAB6', marginTop: '0.25rem' }}>Selected: {inventoryImageFile.name}</p>}
+        <ImageUploadZone
+          inputId="inventory-image-file"
+          label="Upload or paste image"
+          selectedFile={inventoryImageFile}
+          disabled={savingInventoryImage}
+          onFileSelect={(file) =>
+            handleFileSelect(file, (croppedFile) => {
+              setInventoryImageFile(croppedFile);
+              setInventoryImageUrl('');
+            })
+          }
+          onClear={() => setInventoryImageFile(null)}
+        />
+        <div className="admin-form-actions">
+          <button type="submit" className="admin-btn-primary" disabled={savingInventoryImage}>
+            {savingInventoryImage ? 'Saving...' : 'Save Inventory Image'}
+          </button>
         </div>
-        <button type="submit" className="btn-upload" disabled={savingInventoryImage}>
-          {savingInventoryImage ? 'Saving...' : 'Save Inventory Image'}
-        </button>
       </form>
 
       {loadingInventoryImage ? (
-        <div className="loading">Loading inventory image...</div>
+        <div className="admin-loading">Loading inventory image...</div>
       ) : !inventoryImage || !inventoryImage.url ? (
-        <div className="empty-state">
+        <div className="admin-empty-state">
           <p>No inventory image set yet. Add an inventory image above.</p>
         </div>
       ) : (
-        <div className="images-grid">
-          <div className="image-card">
-            <div className="image-preview">
+        <div className="admin-images-grid">
+          <div className="admin-image-card">
+            <div className="admin-image-preview">
               <img src={inventoryImage.url} alt={inventoryImage.name || 'Inventory Image'} />
             </div>
-            <div className="image-info">
+            <div className="admin-image-info">
               <h3>{inventoryImage.name || 'Inventory Image'}</h3>
-              <div className="image-url">
+              <div className="admin-image-url">
                 <input 
                   type="text" 
                   value={inventoryImage.url} 
@@ -1294,14 +1294,14 @@ const ImageLibrary = () => {
                 />
                 <button 
                   onClick={() => copyToClipboard(inventoryImage.url, 'inventory')}
-                  className="btn-copy"
+                  className="admin-btn-secondary"
                 >
                   {copiedId === 'inventory' ? '✓ Copied' : 'Copy'}
                 </button>
               </div>
               <button 
                 onClick={handleClearInventoryImage}
-                className="btn-delete-img"
+                className="admin-btn-danger"
               >
                 Remove Inventory Image
               </button>

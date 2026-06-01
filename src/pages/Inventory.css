@@ -1,111 +1,187 @@
 .inventory-page {
   min-height: 100vh;
-  background-color: #000000;
-  padding: 2rem;
+  padding-bottom: 3rem;
 }
 
-.inventory-container {
-  max-width: 1400px;
-  margin: 0 auto;
+/* Hero — same structure as Our Process */
+.bs-inventory-hero {
+  padding: 0 1.25rem;
+  margin-top: calc(var(--bs-hero-top-offset) - var(--bs-nav-height));
+  margin-bottom: 2.5rem;
 }
 
-.inventory-note {
-  background-color: #1a1a1a;
-  padding: 2rem;
-  border-radius: 12px;
-  border: 1px solid #333;
-  margin-bottom: 2rem;
-  text-align: center;
-}
-
-.inventory-note h2 {
-  color: #EADAB6;
-  font-size: 2rem;
-  margin-bottom: 1rem;
-  font-weight: 700;
-}
-
-.inventory-note p {
-  color: #ccc;
-  font-size: 1.1rem;
-  line-height: 1.7;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.inventory-image-container {
+.bs-inventory-hero__frame {
   position: relative;
-  width: 80vw;
-  max-width: 100%;
-  margin: 0 auto;
-  border-radius: 12px;
+  min-height: clamp(280px, 42vh, 420px);
+  background-color: var(--bs-black-elevated);
+  background-size: 110%;
+  background-position: center center;
+  background-repeat: no-repeat;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  min-height: 400px;
-  background-color: #1a1a1a;
+  padding: 0;
+  border-radius: var(--bs-radius-lg);
+  border: 1px solid var(--bs-glass-border);
+  box-shadow: var(--bs-shadow-panel);
 }
 
-.inventory-image {
-  width: 100%;
-  height: auto;
-  min-height: 400px;
-  display: block;
-  object-fit: cover;
-}
-
-.inventory-overlay-button {
+.bs-inventory-hero__overlay {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem 1.5rem;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.62) 100%),
+    radial-gradient(ellipse at 50% 100%, rgba(201, 162, 39, 0.14), transparent 55%);
+}
+
+.bs-inventory-hero__kicker {
+  font-family: var(--bs-font-ui);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--bs-gold-soft);
+  margin-bottom: 0.65rem;
+}
+
+.bs-inventory-hero__title {
+  font-family: var(--bs-font-display);
+  font-size: clamp(2.75rem, 7vw, 4.5rem);
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  line-height: 1.05;
+  margin: 0 0 0.75rem;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.55);
+}
+
+.bs-inventory-hero__body {
+  max-width: 640px;
+  margin: 0 auto 1.25rem;
+  color: rgba(244, 241, 234, 0.88);
+  font-size: clamp(0.95rem, 2vw, 1.05rem);
+  line-height: 1.65;
+}
+
+.bs-inventory-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.bs-inventory-contact-link {
   display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 2rem;
-  background-color: #000000;
-  color: #EADAB6;
+  gap: 0.55rem;
+  font-family: var(--bs-font-ui);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--bs-cream);
   text-decoration: none;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border: 2px solid #EADAB6;
-  z-index: 10;
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--bs-radius-pill);
+  border: 1px solid var(--bs-glass-border-top);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition:
+    transform var(--bs-motion-fast) var(--bs-ease-out),
+    border-color var(--bs-motion-fast) var(--bs-ease-out),
+    color var(--bs-motion-fast) var(--bs-ease-out),
+    background-color var(--bs-motion-fast) var(--bs-ease-out);
 }
 
-.inventory-overlay-button:hover {
-  background-color: #EADAB6;
-  color: #000000;
-  transform: translate(-50%, -50%) translateY(-2px);
-  box-shadow: 0 4px 12px rgba(234, 218, 182, 0.6);
+.bs-inventory-contact-link:hover {
+  color: #fff;
+  border-color: rgba(201, 162, 39, 0.5);
+  background: rgba(201, 162, 39, 0.08);
+  transform: translateY(-2px);
+}
+
+/* Widget */
+.bs-inventory-widget-section {
+  box-sizing: border-box;
+  width: min(1400px, calc(100% - 2.5rem));
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0;
+  overflow: hidden;
+}
+
+.bs-inventory-widget-section__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--bs-glass-border);
+}
+
+.bs-inventory-widget-section__kicker {
+  font-family: var(--bs-font-ui);
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--bs-cream);
+}
+
+.bs-inventory-widget-section__hint {
+  font-family: var(--bs-font-ui);
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--bs-cream-muted);
+}
+
+.inventory-widget-mount {
+  width: 100%;
+  min-height: clamp(520px, 72vh, 860px);
+  line-height: 0;
+  background: var(--bs-black-elevated);
+}
+
+.inventory-widget-mount #kallisti-inv-embed,
+.inventory-widget-mount iframe {
+  display: block;
+  width: 100%;
+  min-height: inherit;
+  border: none;
 }
 
 @media (max-width: 768px) {
   .inventory-page {
-    padding: 1rem;
+    padding-bottom: 2rem;
   }
-  
-  .inventory-note {
-    padding: 1.5rem;
+
+  .bs-inventory-hero {
+    padding: 0 0.75rem;
+    margin-top: calc(var(--bs-hero-top-offset) - 14px - var(--bs-nav-height));
+    margin-bottom: 2rem;
   }
-  
-  .inventory-note h2 {
-    font-size: 1.5rem;
+
+  .bs-inventory-hero__body {
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
   }
-  
-  .inventory-note p {
-    font-size: 1rem;
+
+  .bs-inventory-widget-section {
+    width: calc(100% - 1.5rem);
   }
-  
-  .inventory-image-container {
-    width: 95vw;
+
+  .bs-inventory-widget-section__header {
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 1rem 1.15rem 0.85rem;
   }
-  
-  .inventory-overlay-button {
-    padding: 0.875rem 1.5rem;
-    font-size: 1rem;
+
+  .inventory-widget-mount {
+    min-height: clamp(480px, 68vh, 720px);
   }
 }
-

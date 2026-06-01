@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { loadGoogleMaps } from '../utils/loadGoogleMaps';
 import './CharterGuestForm.css';
 
 interface FormData {
@@ -22,14 +23,22 @@ const CharterGuestForm = () => {
     loadForm();
   }, [id]);
 
-  // Initialize Google Places Autocomplete for address field
+  // Initialize Google Places Autocomplete for address field (maps loaded on demand)
   useEffect(() => {
-    if (!loading && typeof window !== 'undefined' && (window as any).google) {
+    if (loading) return;
+
+    let cancelled = false;
+
+    void loadGoogleMaps().then(() => {
+      if (cancelled || !(window as Window & { google?: { maps?: { places?: unknown } } }).google?.maps) {
+        return;
+      }
+
       const addressInput = document.getElementById('guest-address-input') as HTMLInputElement;
       if (addressInput) {
         const addressAutocomplete = new (window as any).google.maps.places.Autocomplete(addressInput, {
           types: ['address'],
-          componentRestrictions: { country: ['us', 'vg', 'vi'] }
+          componentRestrictions: { country: ['us', 'vg', 'vi'] },
         });
         addressAutocomplete.addListener('place_changed', () => {
           const place = addressAutocomplete.getPlace();
@@ -38,7 +47,11 @@ const CharterGuestForm = () => {
           }
         });
       }
-    }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [loading]);
 
   // If opened with ?print=1, auto-trigger browser print once the form is loaded
