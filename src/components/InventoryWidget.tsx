@@ -8,12 +8,14 @@ const {
   company: WIDGET_COMPANY,
   token: WIDGET_TOKEN,
   theme: WIDGET_THEME,
-  label: WIDGET_LABEL,
 } = inventoryWidgetConfig;
 
 function removeWidgetDom(targetId: string) {
   document.getElementById(SCRIPT_ID)?.remove();
   document.getElementById('kallisti-inv-embed')?.remove();
+  // Left over if widget.js was ever loaded by mistake (creates a floating launcher).
+  document.getElementById('kallisti-inquiry-btn')?.remove();
+  document.getElementById('kallisti-inquiry-overlay')?.remove();
   document.getElementById(targetId)?.replaceChildren();
 }
 
@@ -35,7 +37,6 @@ const InventoryWidget = ({ targetId = 'in-stock-slabs' }: InventoryWidgetProps) 
     script.setAttribute('data-theme', WIDGET_THEME);
     script.setAttribute('data-target', `#${targetId}`);
     script.setAttribute('data-preload', 'true');
-    script.setAttribute('data-label', WIDGET_LABEL);
     document.body.appendChild(script);
 
     return () => removeWidgetDom(targetId);
