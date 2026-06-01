@@ -94,21 +94,15 @@ const Inventory = () => {
         </motion.div>
       </section>
 
-      <motion.section
-        className="bs-inventory-widget-section glass-panel glass-panel--elevated"
-        initial={reduceMotion ? false : { opacity: 0, y: 28 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.12 }}
-        transition={{ duration: 0.85, ease: BS_EASE, delay: 0.05 }}
-      >
+      <section className="bs-inventory-widget-section" aria-label="In-stock slab catalog">
         <div className="bs-inventory-widget-section__header">
           <p className="bs-inventory-widget-section__kicker">In stock now</p>
           <p className="bs-inventory-widget-section__hint">Scroll inside the catalog to explore</p>
         </div>
-        <div id="in-stock-slabs" className="inventory-widget-mount" />
-      </motion.section>
-
-      <InventoryWidget />
+        <div id="in-stock-slabs" className="inventory-widget-mount">
+          <InventoryWidget />
+        </div>
+      </section>
     </div>
   );
 };

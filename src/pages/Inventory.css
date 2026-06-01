@@ -104,13 +104,17 @@
   transform: translateY(-2px);
 }
 
-/* Widget */
+/* Widget — no backdrop-filter or opacity animation; both break iframe embeds in Chrome */
 .bs-inventory-widget-section {
   box-sizing: border-box;
   width: min(1400px, calc(100% - 2.5rem));
   max-width: 1400px;
   margin: 0 auto;
   padding: 0;
+  background: var(--bs-glass-bg-elevated);
+  border: 1px solid var(--bs-glass-border);
+  border-radius: var(--bs-radius-lg);
+  box-shadow: var(--bs-shadow-panel);
   overflow: hidden;
 }
 
@@ -144,15 +148,17 @@
   width: 100%;
   min-height: 70vh;
   line-height: 0;
-  background: var(--bs-black-elevated);
+  background: #fff;
+  isolation: isolate;
 }
 
-.inventory-widget-mount #kallisti-inv-embed,
-.inventory-widget-mount iframe {
+.inventory-widget-iframe {
   display: block;
   width: 100%;
-  min-height: inherit;
-  border: none;
+  height: 70vh;
+  min-height: 70vh;
+  border: 0;
+  background: #fff;
 }
 
 @media (max-width: 768px) {

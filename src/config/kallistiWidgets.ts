@@ -12,6 +12,23 @@ function widgetOrigin(): string {
   return import.meta.env.DEV ? devOrigin : KALLISTI_ORIGIN;
 }
 
+function kallistiOrigin(): string {
+  for (const candidate of [
+    import.meta.env.VITE_KALLISTI_INVENTORY_WIDGET_SRC,
+    import.meta.env.VITE_KALLISTI_WIDGET_SRC,
+  ]) {
+    const value = envValue(candidate);
+    if (!value) continue;
+    try {
+      return new URL(value).origin;
+    } catch {
+      /* try next */
+    }
+  }
+
+  return widgetOrigin();
+}
+
 function inventoryWidgetSrc(): string {
   const configured = envValue(import.meta.env.VITE_KALLISTI_INVENTORY_WIDGET_SRC);
   if (configured?.includes('/embed/inventory-widget.js')) return configured;
@@ -22,7 +39,25 @@ function inventoryWidgetSrc(): string {
     );
   }
 
-  return `${widgetOrigin()}/embed/inventory-widget.js`;
+  return `${kallistiOrigin()}/embed/inventory-widget.js`;
+}
+
+function inventoryEmbedUrl(): string {
+  const company =
+    envValue(import.meta.env.VITE_KALLISTI_INVENTORY_WIDGET_COMPANY) ??
+    KALLISTI_WIDGET_COMPANY;
+  const token =
+    envValue(import.meta.env.VITE_KALLISTI_INVENTORY_WIDGET_TOKEN) ??
+    '1ZnI2AnF411jo8ZbqOXOJUGZom9dJ6-H';
+  const theme = envValue(import.meta.env.VITE_KALLISTI_INVENTORY_WIDGET_THEME) ?? 'dark';
+  const origin = kallistiOrigin();
+
+  const params = new URLSearchParams({ t: token });
+  if (theme === 'dark' || theme === 'light') {
+    params.set('theme', theme);
+  }
+
+  return `${origin}/embed/inventory/${encodeURIComponent(company)}?${params.toString()}`;
 }
 
 export const KALLISTI_WIDGET_COMPANY =
@@ -42,8 +77,12 @@ export const quoteWidgetConfig = {
   label: envValue(import.meta.env.VITE_KALLISTI_WIDGET_LABEL) ?? 'Request a quote',
 };
 
+export const INVENTORY_EMBED_URL =
+  'https://www.kallisti.pro/embed/inventory/bella-stone-hlzclr?t=1ZnI2AnF411jo8ZbqOXOJUGZom9dJ6-H&theme=dark';
+
 export const inventoryWidgetConfig = {
   src: inventoryWidgetSrc(),
+  embedUrl: inventoryEmbedUrl(),
   company:
     envValue(import.meta.env.VITE_KALLISTI_INVENTORY_WIDGET_COMPANY) ??
     KALLISTI_WIDGET_COMPANY,

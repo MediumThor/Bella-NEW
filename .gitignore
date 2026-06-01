@@ -28,3 +28,6 @@ dist-ssr
 *.sln
 *.sw?
 # Redeploy trigger
+.vercel
+.env*.local
+.env.vercel.*

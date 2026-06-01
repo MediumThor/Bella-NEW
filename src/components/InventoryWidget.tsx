@@ -1,48 +1,26 @@
-import { useEffect } from 'react';
-import { inventoryWidgetConfig } from '../config/kallistiWidgets';
+import { useEffect, useState } from 'react';
+import { INVENTORY_EMBED_URL } from '../config/kallistiWidgets';
 
-const SCRIPT_ID = 'kallisti-inventory-widget';
+const InventoryWidget = () => {
+  const [src, setSrc] = useState<string | null>(null);
 
-const {
-  src: WIDGET_SRC,
-  company: WIDGET_COMPANY,
-  token: WIDGET_TOKEN,
-  theme: WIDGET_THEME,
-} = inventoryWidgetConfig;
-
-function removeWidgetDom(targetId: string) {
-  document.getElementById(SCRIPT_ID)?.remove();
-  document.getElementById('kallisti-inv-embed')?.remove();
-  // Left over if widget.js was ever loaded by mistake (creates a floating launcher).
-  document.getElementById('kallisti-inquiry-btn')?.remove();
-  document.getElementById('kallisti-inquiry-overlay')?.remove();
-  document.getElementById(targetId)?.replaceChildren();
-}
-
-interface InventoryWidgetProps {
-  targetId?: string;
-}
-
-const InventoryWidget = ({ targetId = 'in-stock-slabs' }: InventoryWidgetProps) => {
+  // Defer iframe navigation until after mount so Chrome loads it in a visible,
+  // non-animated parent (opacity:0 / backdrop-filter ancestors break iframes).
   useEffect(() => {
-    if (document.getElementById(SCRIPT_ID)) return;
-    if (!document.getElementById(targetId)) return;
+    const id = window.requestAnimationFrame(() => {
+      setSrc(INVENTORY_EMBED_URL);
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, []);
 
-    const script = document.createElement('script');
-    script.id = SCRIPT_ID;
-    script.async = true;
-    script.src = WIDGET_SRC;
-    script.setAttribute('data-company', WIDGET_COMPANY);
-    script.setAttribute('data-token', WIDGET_TOKEN);
-    script.setAttribute('data-theme', WIDGET_THEME);
-    script.setAttribute('data-target', `#${targetId}`);
-    script.setAttribute('data-preload', 'true');
-    document.body.appendChild(script);
-
-    return () => removeWidgetDom(targetId);
-  }, [targetId]);
-
-  return null;
+  return (
+    <iframe
+      id="kallisti-inv-iframe"
+      className="inventory-widget-iframe"
+      title="In-stock slabs"
+      src={src ?? undefined}
+    />
+  );
 };
 
 export default InventoryWidget;
