@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import './Navigation.css';
 
@@ -105,46 +106,78 @@ const Navigation = () => {
         </button>
       </div>
 
-      <div
-        className={`nav-overlay ${isMenuOpen ? 'nav-overlay--visible' : ''}`}
-        onClick={closeMenu}
-        aria-hidden={!isMenuOpen}
-      />
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <div className={`nav-mobile ${isMenuOpen ? 'nav-mobile--open' : ''}`}>
+            <div
+              className={`nav-overlay ${isMenuOpen ? 'nav-overlay--visible' : ''}`}
+              onClick={closeMenu}
+              aria-hidden={!isMenuOpen}
+            />
 
-      <nav
-        id="nav-drawer"
-        className={`nav-drawer ${isMenuOpen ? 'nav-drawer--open' : ''}`}
-        aria-label="Mobile menu"
-        aria-hidden={!isMenuOpen}
-      >
-        <ul className="nav-drawer__links">
-          {NAV_ITEMS.map((item, index) => (
-            <li key={item.path} style={{ '--nav-item-delay': `${index * 40}ms` } as CSSProperties}>
-              <Link
-                to={item.path}
-                className={`nav-drawer__link ${isActive(item.path, 'end' in item ? item.end : undefined) ? 'nav-drawer__link--active' : ''}`}
-                onClick={closeMenu}
-                tabIndex={isMenuOpen ? 0 : -1}
-              >
-                <span className="nav-drawer__label">{item.label}</span>
-                {isActive(item.path, 'end' in item ? item.end : undefined) && (
-                  <span className="nav-drawer__indicator" aria-hidden />
-                )}
-              </Link>
-            </li>
-          ))}
-        </ul>
-        <div className="nav-drawer__footer">
-          <Link
-            to="/admin/login"
-            className="nav-drawer__cta"
-            onClick={closeMenu}
-            tabIndex={isMenuOpen ? 0 : -1}
-          >
-            Sign In
-          </Link>
-        </div>
-      </nav>
+            <nav
+              id="nav-drawer"
+              className={`nav-drawer ${isMenuOpen ? 'nav-drawer--open' : ''}`}
+              aria-label="Mobile menu"
+              aria-hidden={!isMenuOpen}
+            >
+              <span className="nav-drawer__handle" aria-hidden />
+
+              <div className="nav-drawer__head">
+                <span className="nav-drawer__eyebrow">Menu</span>
+                <button
+                  type="button"
+                  className="nav-drawer__close"
+                  onClick={closeMenu}
+                  aria-label="Close menu"
+                  tabIndex={isMenuOpen ? 0 : -1}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden focusable="false">
+                    <path
+                      d="M6 6l12 12M18 6L6 18"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <ul className="nav-drawer__links">
+                {NAV_ITEMS.map((item, index) => (
+                  <li
+                    key={item.path}
+                    style={{ '--nav-item-delay': `${index * 50}ms` } as CSSProperties}
+                  >
+                    <Link
+                      to={item.path}
+                      className={`nav-drawer__link ${isActive(item.path, 'end' in item ? item.end : undefined) ? 'nav-drawer__link--active' : ''}`}
+                      onClick={closeMenu}
+                      tabIndex={isMenuOpen ? 0 : -1}
+                    >
+                      <span className="nav-drawer__label">{item.label}</span>
+                      {isActive(item.path, 'end' in item ? item.end : undefined) && (
+                        <span className="nav-drawer__indicator" aria-hidden />
+                      )}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="nav-drawer__footer">
+                <Link
+                  to="/admin/login"
+                  className="nav-drawer__cta"
+                  onClick={closeMenu}
+                  tabIndex={isMenuOpen ? 0 : -1}
+                >
+                  Sign In
+                </Link>
+              </div>
+            </nav>
+          </div>,
+          document.body,
+        )}
     </header>
   );
 };
